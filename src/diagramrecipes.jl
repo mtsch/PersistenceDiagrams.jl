@@ -102,8 +102,16 @@ end
     return ()
 end
 
+function RecipesBase.plot(args::Vararg{<:PersistenceDiagram}; kwargs...)
+    return RecipesBase.plot(args; kwargs...)
+end
+
 @recipe function f(
-    pd::Union{PersistenceDiagram, AbstractVector{<:PersistenceDiagram}};
+    pd::Union{
+        PersistenceDiagram,
+        AbstractVector{<:PersistenceDiagram},
+        NTuple{<:Any, <:PersistenceDiagram},
+    };
     infinity=nothing, persistence=false
 )
     t_min, t_max, infinite = t_limits(pd)
@@ -207,15 +215,19 @@ guess a good infinity poistion.
 """
 barcode(::Union{PersistenceDiagram, AbstractVector{<:PersistenceDiagram}})
 
-@userplot struct Barcode{T<:Union{PersistenceDiagram,AbstractVector{<:PersistenceDiagram}}}
-    args::Tuple{T}
+@userplot struct Barcode{T<:Union{PersistenceDiagram, AbstractVector{<:PersistenceDiagram}}}
+    args::NTuple{<:Any, T}
 end
 @recipe function f(bc::Barcode; infinity=nothing)
-    arg = only(bc.args)
-    if arg isa PersistenceDiagram
-        pds = (arg,)
-    elseif arg isa Vector{<:PersistenceDiagram}
-        pds = arg
+    if bc.args isa NTuple{<:Any, PersistenceDiagram}
+        pds = bc.args
+    else
+        arg = only(bc.args)
+        if arg isa PersistenceDiagram
+            pds = (arg,)
+        elseif arg isa Vector{<:PersistenceDiagram}
+            pds = arg
+        end
     end
 
     t_min, t_max, infinite = t_limits(pds)

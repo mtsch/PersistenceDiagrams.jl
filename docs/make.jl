@@ -23,6 +23,7 @@ makedocs(sitename="PersistenceDiagrams.jl",
          pages=[
              "Home" => "index.md",
              "Examples" => [
+                 "Basics" => "generated/basics.md",
                  "Bottleneck and Wasserstein Distance" => "generated/distances.md",
              ],
              "API" => "api/diagrams.md",
