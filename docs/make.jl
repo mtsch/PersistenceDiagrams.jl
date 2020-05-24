@@ -29,5 +29,5 @@ makedocs(sitename="PersistenceDiagrams.jl",
          ])
 
 deploydocs(
-    repo = "github.com/mtsch/Ripserer.jl.git",
+    repo = "github.com/mtsch/PersistenceDiagrams.jl.git",
 )
