@@ -93,7 +93,7 @@ end
         int2 = PersistenceInterval(1, 3)
         int3 = PersistenceInterval(3, 4)
 
-        diag = PersistenceDiagram(1, 2, [int1, int2, int3])
+        diag = PersistenceDiagram(1, [int1, int2, int3], threshold=2)
         @test dim(diag) == 1
         sort!(diag)
         @test diag == [int2, int3, int1]

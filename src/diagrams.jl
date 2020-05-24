@@ -69,8 +69,7 @@ death(int::PersistenceInterval) = int.death
 """
     death(interval::PersistenceInterval)
 
-Get the persistence of `interval`, which is equal to `death - birth`. When
-`T<:AbstractFloat`, `Inf` is returned instead of `∞`.
+Get the persistence of `interval`, which is equal to `death - birth`.
 """
 persistence(int::PersistenceInterval) = isfinite(death(int)) ? death(int) - birth(int) : ∞
 
@@ -141,15 +140,21 @@ plotting.
 """
 struct PersistenceDiagram{T, P<:PersistenceInterval{T}} <: AbstractVector{P}
     dim       ::Int
-    threshold ::Union{T, Infinity}
     intervals ::Vector{P}
+    threshold ::Union{T, Infinity}
+
+    function PersistenceDiagram(
+        dim, intervals::Vector{P}, threshold
+    ) where {T, P<:PersistenceInterval{T}}
+        return new{T, P}(dim, intervals, threshold ≡ ∞ ? ∞ : T(threshold))
+    end
 end
 
-function PersistenceDiagram(dim, threshold, intervals::AbstractVector{<:Tuple})
-    return PersistenceDiagram(dim, threshold, PersistenceInterval.(intervals))
+function PersistenceDiagram(dim, intervals; threshold=∞)
+    return PersistenceDiagram(dim, intervals, threshold)
 end
-function PersistenceDiagram(dim, intervals)
-    return PersistenceDiagram(dim, ∞, intervals)
+function PersistenceDiagram(dim, intervals::AbstractVector{<:Tuple}; threshold=∞)
+    return PersistenceDiagram(dim, PersistenceInterval.(intervals), threshold)
 end
 
 function show_intervals(io::IO, pd)
@@ -200,10 +205,10 @@ Base.firstindex(pd::PersistenceDiagram) = 1
 Base.lastindex(pd::PersistenceDiagram) = length(pd.intervals)
 
 function Base.similar(pd::PersistenceDiagram)
-    return PersistenceDiagram(dim(pd), threshold(pd), similar(pd.intervals))
+    return PersistenceDiagram(dim(pd), similar(pd.intervals), threshold(pd))
 end
 function Base.similar(pd::PersistenceDiagram, dims::Tuple)
-    return PersistenceDiagram(dim(pd), threshold(pd), similar(pd.intervals, dims))
+    return PersistenceDiagram(dim(pd), similar(pd.intervals, dims), threshold(pd))
 end
 
 """
