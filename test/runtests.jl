@@ -10,6 +10,9 @@ end
 @safetestset "matching" begin
     include("matching.jl")
 end
+@safetestset "images" begin
+    include("images.jl")
+end
 @safetestset "plotsrecipes" begin
     include("plotsrecipes.jl")
 end
