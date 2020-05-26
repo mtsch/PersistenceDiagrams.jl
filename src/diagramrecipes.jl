@@ -1,67 +1,12 @@
 """
-    dim_str(pd)
+    dim_str(diag)
 
 Get `dim` as subscript string.
 """
-function dim_str(pd)
+function dim_str(diag)
     sub_digits = ("₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉")
-    return join(reverse(sub_digits[digits(dim(pd)) .+ 1]))
+    return join(reverse(sub_digits[digits(dim(diag)) .+ 1]))
 end
-
-"""
-    t_limits(diagram)
-
-Get the minimum and maximum birth/death times in `diagram` and a boolean specifing if any of
-the intervals was infinite. If any of the intervals are infinite, use the value specified in
-persistence diagram or try to guess a good number to place `∞` at.
-"""
-function t_limits(pd::PersistenceDiagram)
-    t_min = foldl(min, [birth.(pd); death.(filter(isfinite, pd))], init=0)
-    t_max = foldl(max, [birth.(pd); death.(filter(isfinite, pd))], init=0)
-    infinite = any(!isfinite, pd)
-    if infinite
-        if threshold(pd) ≢ ∞
-            t_max = threshold(pd)
-        else
-            rounded = round(t_max, RoundUp)
-            t_max = rounded + (t_max ≥ 1 ? ndigits(Int(rounded)) : 0)
-        end
-    end
-    return t_min, t_max, infinite
-end
-function t_limits(pds)
-    t_min = 0
-    t_max = 0
-    infinite = false
-    for pd in pds
-        t_min = foldl(min, [birth.(pd); death.(filter(isfinite, pd))], init=t_min)
-        t_max = foldl(max, [birth.(pd); death.(filter(isfinite, pd))], init=t_max)
-        infinite |= any(!isfinite, pd)
-    end
-    if infinite
-        if all(isa.(pds, PersistenceDiagram))
-            infinity = maximum(threshold.(pds))
-        else
-            infinity = ∞
-        end
-        if infinity ≢ ∞
-            t_max = infinity
-        else
-            rounded = round(t_max, RoundUp)
-            t_max = rounded + (t_max ≥ 1 ? ndigits(Int(rounded)) : 0)
-        end
-    end
-    return t_min, t_max, infinite
-end
-
-# This type handles plotting the background things in a persistence diagram, such as the
-# infinity line and birth = death line.
-struct DiagramStuff
-    t_lims::NTuple{2, Float64}
-    infinite::Bool
-    persistence::Bool
-end
-
 function clamp_death(int::PersistenceInterval, t_max)
     return isfinite(int) ? death(int) : t_max
 end
@@ -69,210 +14,246 @@ function clamp_persistence(int::PersistenceInterval, t_max)
     return isfinite(int) ? persistence(int) : t_max
 end
 
-@recipe function f(arg::DiagramStuff)
-    t_min, t_max = arg.t_lims
-    infinite = arg.infinite
-    persistence = arg.persistence
+struct InfinityLine
+    vertical::Bool
+end
 
-    # line at infinity
-    if infinite
-        @series begin
-            seriestype := :hline
-            seriescolor := :grey
-            line := :dot
-            primary := false
-
-            [t_max]
-        end
-    end
-
-    # x = y line
-    @series begin
-        seriestype := :path
-        seriescolor := :black
-        primary := false
-
-        if persistence
-            [t_min, t_max], [t_min, t_min]
+@recipe function f(::Type{InfinityLine}, infline::InfinityLine)
+    if haskey(plotattributes, :infinity)
+        if infline.vertical
+            seriestype := :vline
         else
-            [t_min, t_max], [t_min, t_max]
+            seriestype := :hline
         end
-    end
-    primary := false
-    return ()
-end
+        seriescolor := :grey
+        line := :dot
+        label := "∞"
 
-function RecipesBase.plot(args::Vararg{<:PersistenceDiagram}; kwargs...)
-    return RecipesBase.plot(args; kwargs...)
-end
-
-@recipe function f(
-    pd::Union{
-        PersistenceDiagram,
-        AbstractVector{<:PersistenceDiagram},
-        NTuple{<:Any, <:PersistenceDiagram},
-    };
-    infinity=nothing, persistence=false
-)
-    t_min, t_max, infinite = t_limits(pd)
-    if infinite && !isnothing(infinity)
-        t_max = infinity
-    end
-    if pd isa PersistenceDiagram
-        pds = (pd,)
+        #if haskey(plotattributes, :xlims)
+        #    x_lo, x_hi = plotattributes[:xlims]
+        #    annotations := ((x_hi - x_lo)/2, plotattributes[:infinity], "∞")
+        #end
+        [plotattributes[:infinity]]
     else
-        pds = pd
+        [NaN]
     end
-    different_dims = allunique(dim.(pds))
+end
 
-    xguide --> "birth"
-    yguide --> (persistence ? "persistence" : "death")
-    legend --> :bottomright
-    title --> "Persistence Diagram"
+struct ZeroPersistenceLine end
 
-    # For some reason, the plot's limits want to be between -1 and t_max. This is a
-    # workaround.
-    gap = (t_max - t_min)*0.05
-    xlims --> (t_min - gap, t_max + gap)
-    ylims --> (t_min - gap, t_max + gap)
+@recipe function f(::Type{ZeroPersistenceLine}, ::ZeroPersistenceLine)
+    seriescolor := :black
+
+    if get(plotattributes, :persistence, false)
+        seriestype := :hline
+        [0]
+    else
+        seriestype := :line
+        identity
+    end
+end
+
+struct PersistenceDiagramsPlot
+    diags::Tuple
+    PersistenceDiagramsPlot(diags) = new((diags...))
+end
+
+@recipe function f(::Type{I}, int::I) where I<:PersistenceInterval
+    [birth(int), death(int)]
+end
+
+@recipe function f(::Type{D}, diag::D) where D<:AbstractArray{<:PersistenceInterval}
+    if plotattributes[:letter] == :x
+        return birth.(diag)
+    elseif get(plotattributes, :persistence, false)
+        return clamp_persistence.(diag, get(plotattributes, :infinity, Inf))
+    else
+        return clamp_death.(diag, get(plotattributes, :infinity, Inf))
+    end
+end
+
+@recipe function f(::Type{Val{:persistencediagram}}, x, y, z)
+    seriestype := :scatter
+    markerstrokecolor --> :auto
+    markeralpha --> 0.5
+    x, y
+end
+
+function limits(diags, pers)
+    xs = map.(birth, diags)
+    if pers
+        ys = map.(persistence, diags)
+    else
+        ys = map.(death, diags)
+    end
+    t_lo = min(minimum(t for t in Iterators.flatten((xs..., ys...))), 0.0)
+    t_hi = maximum(t for t in Iterators.flatten((xs..., ys...)) if t < ∞)
+
+    threshes = filter(isfinite, threshold.(diags))
+    if !isempty(threshes)
+        infinity = maximum(threshes)
+    else
+        infinity = t_hi * 1.25
+    end
+    if any(!isfinite, Iterators.flatten(ys))
+        t_hi = infinity
+    end
+
+    return t_lo, t_hi, infinity
+end
+
+function set_default!(d, key, value)
+    d[key] = get(d, key, value)
+end
+
+function setup_diagram_plot!(d, diags)
+    set_default!(d, :persistence, false)
+    t_lo, t_hi, infinity = limits(diags, d[:persistence])
+    # Zero persistence line messes up the limits, so we attempt to reset them here.
+    gap = (t_hi - t_lo) * 0.05
+    if gap > 0
+        set_default!(d, :xlims, (t_lo - gap, t_hi + gap))
+        set_default!(d, :ylims, (t_lo - gap, t_hi + gap))
+        set_default!(d, :aspect_ratio, 1)
+    end
+    set_default!(d, :infinity, infinity)
+
+    set_default!(d, :xguide, "birth")
+    set_default!(d, :yguide, d[:persistence] ? "persistence" : "death")
+    set_default!(d, :legend, d[:persistence] ? :topright : :bottomright)
+    set_default!(d, :title, "Persistence Diagram")
+end
+
+@recipe function f(diags::NTuple{<:Any, PersistenceDiagram})
+    setup_diagram_plot!(plotattributes, diags)
 
     @series begin
         primary := false
-        DiagramStuff((t_min, t_max), infinite, persistence)
+        ZeroPersistenceLine()
+    end
+    @series begin
+        InfinityLine(false)
     end
 
-    for pd in pds
-        isempty(pd) && continue
+    different_dims = allunique(dim.(diags))
+    for (i, diag) in enumerate(diags)
         @series begin
-            seriestype := :scatter
-            label --> "H$(dim_str(pd))"
+            seriestype := :persistencediagram
             if different_dims
-                markercolor --> dim(pd)+1
-                markerstrokecolor --> plotattributes[:markercolor]
-            end
-            markeralpha --> 0.7
-
-            births = birth.(pd)
-            if persistence
-                deaths = clamp_persistence.(pd, t_max)
+                label --> "H$(dim_str(diag))"
+                markercolor --> dim(diag)+1
             else
-                deaths = clamp_death.(pd, t_max)
+                label --> "H$(dim_str(diag)) ($i)"
             end
-            births, deaths
+            diag, diag
         end
     end
-    if infinite
-        annotations --> (t_min + (t_max - t_min)/2, t_max, "∞")
-    end
-    primary := false
-    return ()
 end
 
-@recipe function f(match::Matching; persistence=false, bottleneck=match.bottleneck)
-    pds = [match.left, match.right]
-    t_min, t_max, infinite = t_limits(pds)
+function RecipesBase.plot(diags::Vararg{<:PersistenceDiagram}; kwargs...)
+    return RecipesBase.plot(diags; kwargs...)
+end
+function RecipesBase.plot(diag::PersistenceDiagram; kwargs...)
+    return RecipesBase.plot((diag,); kwargs...)
+end
 
-    xguide --> "birth"
-    yguide --> (persistence ? "persistence" : "death")
-    legend --> :bottomright
-    title --> "Persistence Diagram"
+@recipe function f(match::Matching)
+    left = match.left
+    right = match.right
+    setup_diagram_plot!(plotattributes, (left, right))
+    inf = plotattributes[:infinity]
 
-    plotattributes[:infinity] = nothing
-    plotattributes[:persistence] = persistence
     @series begin
         label --> "matching"
 
         xs = Float64[]
         ys = Float64[]
-        for (l, r) in matching(match, bottleneck=bottleneck)
+        for (l, r) in matching(match, bottleneck=get(plotattributes, :bottleneck, false))
             append!(xs, (birth(l), birth(r), NaN))
-            if persistence
-                append!(ys, (clamp_persistence(l, t_max), clamp_persistence(r, t_max), NaN))
+            if plotattributes[:persistence]
+                append!(ys, (clamp_persistence(l, inf), clamp_persistence(r, inf), NaN))
             else
-                append!(ys, (clamp_death(l, t_max), clamp_death(r, t_max), NaN))
+                append!(ys, (clamp_death(l, inf), clamp_death(r, inf), NaN))
             end
         end
         xs, ys
     end
 
     @series begin
-        pds
+        primary := false
+        InfinityLine(false)
     end
-
-    if infinite
-        annotations --> (t_min + (t_max - t_min)/2, t_max, "∞")
+    @series begin
+        primary := false
+        ZeroPersistenceLine()
     end
-    primary := false
-    return ()
+    @series begin
+        seriestype := :persistencediagram
+        label --> "left"
+        left, left
+    end
+    @series begin
+        seriestype := :persistencediagram
+        label --> "right"
+        right, right
+    end
 end
 
 """
-    barcode(diagram; infinity=nothing)
+    barcode(diagram)
 
-Plot the barcode plot or `AbstractVector` of diagrams. The `infinity` keyword argument
-determines where the infinity line is placed. If set to `nothing` the function tries to
-guess a good infinity poistion.
+Plot the barcode plot of persistence diagram or multiple diagrams diagrams. The `infinity`
+keyword argument determines where the infinity line is placed. If set to `nothing` the
+function tries to guess a good infinity poistion.
 """
-barcode(::Union{PersistenceDiagram, AbstractVector{<:PersistenceDiagram}})
+barcode
 
-@userplot struct Barcode{T<:Union{PersistenceDiagram, AbstractVector{<:PersistenceDiagram}}}
-    args::NTuple{<:Any, T}
+struct Barcode
+    diags::NTuple{<:Any, <:PersistenceDiagram}
 end
-@recipe function f(bc::Barcode; infinity=nothing)
-    if bc.args isa NTuple{<:Any, PersistenceDiagram}
-        pds = bc.args
-    else
-        arg = only(bc.args)
-        if arg isa PersistenceDiagram
-            pds = (arg,)
-        elseif arg isa Vector{<:PersistenceDiagram}
-            pds = arg
-        end
-    end
 
-    t_min, t_max, infinite = t_limits(pds)
-    if infinite && !isnothing(infinity)
-        t_max = infinity
-    end
+@recipe function f(bc::Barcode)
+    diags = bc.diags
 
+    t_lo, t_hi, infinity = limits(diags, false)
+    infinity --> infinity
     yticks --> []
     xguide --> "t"
     legend --> :outertopright
     title --> "Persistence Barcode"
 
-    if infinite
-        @series begin
-            seriestype := :path
-            seriescolor := :grey
-            line := :dot
-            label := "∞"
-            primary := false
+    _bar_offset --> 0
+    bar_offset = plotattributes[:_bar_offset]
+    # Infinity line series messes up the limits.
+    n_intervals = sum(length, diags) + bar_offset
+    ylims --> (1 - n_intervals * 0.05, n_intervals * 1.05)
 
-            [t_max, t_max], [1, sum(length, pds)]
-        end
+    @series begin
+        InfinityLine(true)
     end
-    offset = 0
-    for pd in pds
+    different_dims = allunique(dim.(diags))
+    for (i, diag) in enumerate(diags)
         @series begin
             seriestype := :path
-            label --> "H$(dim_str(pd))"
-            linewidth --> 1
-            seriescolor --> dim(pd)+1
+            if different_dims
+                label --> "H$(dim_str(diag))"
+                markercolor --> dim(diag)+1
+            else
+                label --> "H$(dim_str(diag)) ($i)"
+            end
 
             xs = Float64[]
             ys = Float64[]
-            for (i, int) in enumerate(pd)
-                offset += 1
-                b, d = birth(int), min(death(int), t_max)
+            for int in diag
+                bar_offset += 1
+                b, d = birth(int), clamp_death(int, t_hi)
                 append!(xs, (b, d, NaN))
-                append!(ys, (offset, offset, NaN))
+                append!(ys, (bar_offset, bar_offset, NaN))
             end
             xs, ys
         end
     end
-    if infinite
-        annotations --> (t_max, (offset+1)/2, "∞")
-    end
-    primary := false
-    return ()
 end
+
+barcode(args...; kwargs...) = RecipesBase.plot(Barcode(tuple(args...)); kwargs...)
+barcode!(args...; kwargs...) = RecipesBase.plot!(Barcode(tuple(args...)); kwargs...)
