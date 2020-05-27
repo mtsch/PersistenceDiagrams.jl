@@ -28,13 +28,11 @@ end
         seriescolor := :grey
         line := :dot
         label := "∞"
+        linewidth := 1
 
-        #if haskey(plotattributes, :xlims)
-        #    x_lo, x_hi = plotattributes[:xlims]
-        #    annotations := ((x_hi - x_lo)/2, plotattributes[:infinity], "∞")
-        #end
         [plotattributes[:infinity]]
     else
+        label := ""
         [NaN]
     end
 end
@@ -56,10 +54,6 @@ end
 struct PersistenceDiagramsPlot
     diags::Tuple
     PersistenceDiagramsPlot(diags) = new((diags...))
-end
-
-@recipe function f(::Type{I}, int::I) where I<:PersistenceInterval
-    [birth(int), death(int)]
 end
 
 @recipe function f(::Type{D}, diag::D) where D<:AbstractArray{<:PersistenceInterval}
@@ -104,6 +98,7 @@ end
 
 function set_default!(d, key, value)
     d[key] = get(d, key, value)
+    return d
 end
 
 function setup_diagram_plot!(d, diags)
@@ -199,15 +194,6 @@ end
     end
 end
 
-"""
-    barcode(diagram)
-
-Plot the barcode plot of persistence diagram or multiple diagrams diagrams. The `infinity`
-keyword argument determines where the infinity line is placed. If set to `nothing` the
-function tries to guess a good infinity poistion.
-"""
-barcode
-
 struct Barcode
     diags::NTuple{<:Any, <:PersistenceDiagram}
 end
@@ -235,6 +221,7 @@ end
     for (i, diag) in enumerate(diags)
         @series begin
             seriestype := :path
+            linewidth --> 1
             if different_dims
                 label --> "H$(dim_str(diag))"
                 markercolor --> dim(diag)+1
@@ -255,5 +242,20 @@ end
     end
 end
 
+
+"""
+    barcode(diagram)
+
+Plot the barcode plot of persistence diagram or multiple diagrams diagrams. The `infinity`
+keyword argument determines where the infinity line is placed. If unset, the function tries
+to use `threshold(diagram)` or guess a good position to place the line at.
+"""
 barcode(args...; kwargs...) = RecipesBase.plot(Barcode(tuple(args...)); kwargs...)
+"""
+    barcode!(diagram)
+
+Plot the barcode plot of persistence diagram or multiple diagrams diagrams. The `infinity`
+keyword argument determines where the infinity line is placed. If unset, the function tries
+to use `threshold(diagram)` or guess a good position to place the line at.
+"""
 barcode!(args...; kwargs...) = RecipesBase.plot!(Barcode(tuple(args...)); kwargs...)
