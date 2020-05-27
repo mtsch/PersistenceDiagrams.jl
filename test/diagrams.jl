@@ -1,7 +1,7 @@
 using PersistenceDiagrams
 using Compat
 
-using PersistenceDiagrams: dist_type
+using PersistenceDiagrams: stripped
 
 @testset "PersistenceInterval" begin
     @testset "no representative" begin
@@ -13,10 +13,10 @@ using PersistenceDiagrams: dist_type
         @test persistence(int1) == 1
         @test int1 == (1, 2)
         @test convert(
-            PersistenceInterval{Float64, Nothing}, (1, 2)
+            PersistenceInterval{Nothing}, (1, 2)
         ) ≡ PersistenceInterval(1, 2)
         @test convert(
-            PersistenceInterval{Float64, Nothing}, (1, Inf)
+            PersistenceInterval{Nothing}, (1, Inf)
         ) ≡ PersistenceInterval(1, Inf)
         @test_throws BoundsError int1[0]
         @test int1[1] == 1
@@ -40,8 +40,6 @@ using PersistenceDiagrams: dist_type
         @test first(int1) == 1
         @test last(int1) == 2
 
-        @test dist_type(int1) ≡ dist_type(typeof(int1)) ≡ Float64
-
         @test int1 < int2
         @test int1 < PersistenceInterval(2, 2)
 
@@ -50,7 +48,7 @@ using PersistenceDiagrams: dist_type
         @test sprint(print, int1) == "[1.0, 2.0)"
         @test sprint(print, int2) == "[1.0, ∞)"
         @test sprint((io, val) -> show(io, MIME"text/plain"(), val), int1) ==
-            "PersistenceInterval{Float64}(1.0, 2.0)"
+            "PersistenceInterval(1.0, 2.0)"
     end
     @testset "with representative" begin
         int1 = PersistenceInterval(2.0, 3.0, [1, 2, 3, 4])
@@ -77,12 +75,15 @@ using PersistenceDiagrams: dist_type
 
         @test representative(int1) == [1, 2, 3, 4]
         @test representative(int2) == [1, 2]
+        @test tuple(stripped(int1)...) == tuple(int1...)
+        @test stripped(int1) ≢ int1
+        @test stripped(int1) isa PersistenceInterval{Nothing}
 
         @test sprint(print, int1) == "[2.0, 3.0)"
         @test sprint(print, int2) == "[1.0, ∞)"
         @test sprint((io, val) -> show(io, MIME"text/plain"(), val), int1) ==
             """
-                PersistenceInterval{Float64}(2.0, 3.0) with representative:
+                PersistenceInterval(2.0, 3.0) with representative:
                 4-element Array{Int64,1}:
                  1
                  2
@@ -129,7 +130,5 @@ end
         @test lastindex(diag) == 3
         @test first(diag) == (1, 3)
         @test last(diag) == (3, Inf)
-
-        @test dist_type(diag) ≡ dist_type(typeof(diag)) ≡ Float64
     end
 end

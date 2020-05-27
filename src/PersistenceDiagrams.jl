@@ -11,7 +11,7 @@ using Hungarian
 using RecipesBase
 
 include("diagrams.jl")
-include("distances.jl")
+include("matching.jl")
 include("plotsrecipes.jl")
 
 end

@@ -15,13 +15,18 @@ A matching between two persistence diagrams.
 * [`distance(::Matching)`](@ref)
 * [`matching(::Matching)`](@ref)
 """
-struct Matching{T, L, R}
-    left::L
-    right::R
-    weight::T
+struct Matching
+    left::PersistenceDiagram{PersistenceInterval{Nothing}}
+    right::PersistenceDiagram{PersistenceInterval{Nothing}}
+    weight::Float64
     matching::Vector{Pair{Int, Int}}
     bottleneck::Bool
+
+    function Matching(left, right, weight, matching, bottleneck)
+        new(stripped(left), stripped(right), weight, matching, bottleneck)
+    end
 end
+
 
 """
     distance(::Matching)
@@ -39,7 +44,7 @@ function distance(int1, int2)
     elseif isfinite(int1) && isfinite(int2)
         return abs(birth(int1) - birth(int2))
     else
-        return promote_type(eltype(int1), eltype(int2))(Inf)
+        return Inf
     end
 end
 
@@ -50,11 +55,9 @@ Get the matching of a `Matching` object represented by a vector of pairs of inte
 `bottleneck` is set to true, only return the edges with length equal to the weight of the
 matching.
 """
-function matching(match::Matching{T}; bottleneck=match.bottleneck) where T
-    L = eltype(match.left)
-    R = eltype(match.right)
-
-    result = Pair{L, R}[]
+function matching(match::Matching; bottleneck=match.bottleneck)
+    P = PersistenceInterval{Nothing}
+    result = Pair{P, P}[]
     n = length(match.left)
     m = length(match.right)
     for (i, j) in match.matching
@@ -63,11 +66,11 @@ function matching(match::Matching{T}; bottleneck=match.bottleneck) where T
         elseif i ≤ n
             # left is matched to diagonal
             l = match.left[i]
-            push!(result, match.left[i] => R(birth(l), birth(l)))
+            push!(result, match.left[i] => P(birth(l), birth(l)))
         elseif j ≤ m
             # right is matched to diagonal
             r = match.right[j]
-            push!(result, L(birth(r), birth(r)) => r)
+            push!(result, P(birth(r), birth(r)) => r)
         end
     end
     sort!(result)
@@ -91,12 +94,18 @@ function Base.show(io::IO, ::MIME"text/plain", match::Matching)
     end
 end
 
+"convert n-element diagram to 2×n matrix"
+function _to_matrix(diag)
+    pts = Tuple{Float64, Float64}[(birth(i), death(i)) for i in diag if isfinite(i)]
+    return reshape(reinterpret(Float64, pts), (2, length(pts)))
+end
+
 """
     adj_matrix(left::PersistenceDiagram, right::PersistenceDiagram, power)
 
 Get the adjacency matrix of the matching between `left` and `right`. Edge weights are equal
 to distances between intervals raised to the power of `power`. Distances between diagonal
-points and values that should not be matched with them are set to `typemax(T)`. The same
+points and values that should not be matched with them are set to `Inf`. The same
 holds for distances between finite and infinite intervals.
 
 For `length(left) == n` and `length(right) == m`, it returns a ``(n m) × (m n)`` matrix.
@@ -120,33 +129,25 @@ adj_matrix(left, right)
 ```
 """
 function adj_matrix(left, right, power=1)
-    function _to_matrix(diag, T)
-        pts = Tuple{T, T}[T.((birth(i), death(i))) for i in diag if isfinite(i)]
-        return reshape(reinterpret(T, pts), (2, length(pts)))
-    end
     sort!(left, by=death)
     sort!(right, by=death)
 
-    # float to handle inf correctly.
-    T = promote_type(dist_type(left), dist_type(right), typeof(power))
-    P = PersistenceInterval{T, Nothing}
-
     n = length(left)
     m = length(right)
-    adj = fill(typemax(T), n + m, m + n)
+    adj = fill(Inf, n + m, m + n)
 
-    dists = pairwise(Chebyshev(), _to_matrix(right, T), _to_matrix(left, T), dims=2)
+    dists = pairwise(Chebyshev(), _to_matrix(right), _to_matrix(left), dims=2)
     adj[axes(dists)...] .= dists
     for i in size(dists, 2)+1:n, j in size(dists, 1)+1:m
         adj[j, i] = abs(birth(left[i]) - birth(right[j]))
     end
     for i in 1:n
-        adj[i + m, i] = T(persistence(left[i]))
+        adj[i + m, i] = persistence(left[i])
     end
     for j in 1:m
-        adj[j, j + n] = T(persistence(right[j]))
+        adj[j, j + n] = persistence(right[j])
     end
-    adj[m + 1:m + n, n + 1:n + m] .= zero(T)
+    adj[m + 1:m + n, n + 1:n + m] .= 0.0
 
     if power ≠ 1
         return adj.^power
@@ -156,7 +157,7 @@ function adj_matrix(left, right, power=1)
 end
 
 """
-    BottleneckGraph{T}
+    BottleneckGraph
 
 Representation of the bipartite graph used for computing bottleneck distance via the
 Hopcroft-Karp algorithm. In all the following functions, `left` and `right` refer to the
@@ -165,20 +166,20 @@ numbers of points in the diagrams plus the diagonals.
 
 # Fields
 
-* `adj::Matrix{T}`: the adjacency matrix.
+* `adj::Matrix{Float64}`: the adjacency matrix.
 * `match_left::Vector{Int}`: matches of left vertices.
 * `match_right::Vector{Int}`: matches of right vertices.
-* `edges::Vector{T}`: edge lengths, unique and sorted.
+* `edges::Vector{Float64}`: edge lengths, unique and sorted.
 * `n::Int`: number of intervals in left diagram.
 * `m::Int`: number of intervals in right diagram.
 """
-struct BottleneckGraph{T}
-    adj::Matrix{T}
+struct BottleneckGraph
+    adj::Matrix{Float64}
 
     match_left::Vector{Int}
     match_right::Vector{Int}
 
-    edges::Vector{T}
+    edges::Vector{Float64}
 
     n_vertices::Int
 end
@@ -187,7 +188,6 @@ function BottleneckGraph(left::PersistenceDiagram, right::PersistenceDiagram)
     n = length(left)
     m = length(right)
     adj = adj_matrix(left, right)
-    T = eltype(adj)
 
     edges = filter!(isfinite, sort!(unique!(copy(vec(adj)))))
 
@@ -410,8 +410,7 @@ function matching(::Bottleneck, left, right)
         match, _ = hopcroft_karp!(graph, edges[hi])
     end
     @assert length(match) == length(left) + length(right)
-    T = promote_type(dist_type(left), dist_type(right))
-    return Matching(left, right, T(distance), match, true)
+    return Matching(left, right, distance, match, true)
 end
 
 """
@@ -466,7 +465,7 @@ Computing the Wasserstein distance requires ``\\mathcal{O}(n^2)`` space!
 struct Wasserstein
     q::Float64
 
-    Wasserstein(q=1) = new(float(q))
+    Wasserstein(q=1) = new(Float64(q))
 end
 
 """
@@ -503,8 +502,7 @@ function matching(w::Wasserstein, left, right)
 
         return Matching(left, right, distance, match, false)
     else
-        T = promote_type(dist_type(left), dist_type(right))
-        return Matching(left, right, T(Inf), Pair{Int, Int}[], false)
+        return Matching(left, right, Inf, Pair{Int, Int}[], false)
     end
 end
 
