@@ -1,45 +1,35 @@
 # interval =============================================================================== #
 """
-    PersistenceInterval{T, C}
+    PersistenceInterval{T<:AbstractFloat, C}
 
 The type that represents a persistence interval. It behaves exactly like a
-`Tuple{T, Union{T, Infinity}}`, but may have a representative cocycle attached to it.
+`Tuple{T, T}`, but may have a representative cocycle attached to it.
 """
-struct PersistenceInterval{T, R}
+struct PersistenceInterval{T<:AbstractFloat, R}
     birth          ::T
-    death          ::Union{T, Infinity}
+    death          ::T
     representative ::R
 
     function PersistenceInterval{T, R}(birth, death, rep::R=nothing) where {T, R}
-        if death ≡ ∞
-            return new{T, R}(T(birth), death, rep)
-        else
-            return new{T, R}(T(birth), T(death), rep)
-        end
+        return new{T, R}(T(birth), T(death), rep)
     end
     function PersistenceInterval{T, R}((birth, death), rep::R=nothing) where {T, R}
-        if death ≡ ∞
-            return new{T, R}(T(birth), death, rep)
-        else
-            return new{T, R}(T(birth), T(death), rep)
-        end
+        return new{T, R}(T(birth), T(death), rep)
     end
 end
 
-function PersistenceInterval(birth::T, death::Union{T, Infinity}, rep::R=nothing) where {T, R}
+function PersistenceInterval(birth, death, rep::R=nothing) where R
+    T = float(promote_type(typeof(birth), typeof(death)))
     return PersistenceInterval{T, R}(birth, death, rep)
 end
-function PersistenceInterval(t::Tuple{<:Any, <:Any})
-    return PersistenceInterval(t...)
+function PersistenceInterval(t::Tuple{<:Any, <:Any}, rep=nothing)
+    return PersistenceInterval(t..., rep)
 end
 function Base.convert(::Type{P}, tp::Tuple{<:Any, <:Any}) where P<:PersistenceInterval
     return P(tp)
 end
 
 function Base.show(io::IO, int::PersistenceInterval)
-    print(io, "[", birth(int), ", ", death(int), ")")
-end
-function Base.show(io::IO, int::PersistenceInterval{<:AbstractFloat})
     b = round(birth(int), sigdigits=3)
     d = isfinite(death(int)) ? round(death(int), sigdigits=3) : "∞"
     print(io, "[$b, $d)")
@@ -71,7 +61,7 @@ death(int::PersistenceInterval) = int.death
 
 Get the persistence of `interval`, which is equal to `death - birth`.
 """
-persistence(int::PersistenceInterval) = isfinite(death(int)) ? death(int) - birth(int) : ∞
+persistence(int::PersistenceInterval) = death(int) - birth(int)
 
 Base.isfinite(int::PersistenceInterval) = isfinite(death(int))
 
@@ -102,7 +92,7 @@ end
 Base.length(::PersistenceInterval) = 2
 Base.IteratorSize(::Type{<:PersistenceInterval}) = Base.HasLength()
 Base.IteratorEltype(::Type{<:PersistenceInterval}) = Base.HasEltype()
-Base.eltype(::Type{<:PersistenceInterval{T}}) where T = Union{T, Infinity}
+Base.eltype(::Type{<:PersistenceInterval{T}}) where T = T
 
 dist_type(::Type{<:PersistenceInterval{T}}) where T = T
 dist_type(::PersistenceInterval{T}) where T = T
@@ -141,19 +131,20 @@ plotting.
 struct PersistenceDiagram{T, P<:PersistenceInterval{T}} <: AbstractVector{P}
     dim       ::Int
     intervals ::Vector{P}
-    threshold ::Union{T, Infinity}
+    threshold ::T
 
     function PersistenceDiagram(
         dim, intervals::Vector{P}, threshold
-    ) where {T, P<:PersistenceInterval{T}}
-        return new{T, P}(dim, intervals, threshold ≡ ∞ ? ∞ : T(threshold))
+    ) where P<:PersistenceInterval
+        T = eltype(P)
+        return new{T, P}(dim, intervals, T(threshold))
     end
 end
 
-function PersistenceDiagram(dim, intervals; threshold=∞)
+function PersistenceDiagram(dim, intervals; threshold=Inf)
     return PersistenceDiagram(dim, intervals, threshold)
 end
-function PersistenceDiagram(dim, intervals::AbstractVector{<:Tuple}; threshold=∞)
+function PersistenceDiagram(dim, intervals::AbstractVector{<:Tuple}; threshold=Inf)
     return PersistenceDiagram(dim, PersistenceInterval.(intervals), threshold)
 end
 

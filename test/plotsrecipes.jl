@@ -22,16 +22,16 @@ n_series(args...; kwargs...) = length(series(args...; kwargs...))
     @test dim_str(PersistenceDiagram(0, [(1,1)])) == "₀"
     @test dim_str(PersistenceDiagram(1990, [(1,1)])) == "₁₉₉₀"
 
-    int1 = PersistenceInterval(3, ∞)
+    int1 = PersistenceInterval(3, Inf)
     int2 = PersistenceInterval(1, 2)
     @test clamp_death(int1, 5) == 5
     @test clamp_persistence(int1, 5) == 5
     @test clamp_death(int2, 5) == 2
     @test clamp_persistence(int2, 5) == 1
 
-    diag1 = PersistenceDiagram(0, [(1, 2), (2, 3), (2, ∞)])
+    diag1 = PersistenceDiagram(0, [(1, 2), (2, 3), (2, Inf)])
     diag2 = PersistenceDiagram(0, [(0, 2), (2, 3), (2, 5)])
-    diag3 = PersistenceDiagram(0, [(0, 2), (2, 3), (2, ∞)], threshold=6)
+    diag3 = PersistenceDiagram(0, [(0, 2), (2, 3), (2, Inf)], threshold=6)
     diag4 = PersistenceDiagram(0, [(0, 2), (2, 3), (2, 5)], threshold=7)
 
     @test limits((diag1,), false) == (0, 3 * 1.25, 3 * 1.25)
@@ -67,7 +67,7 @@ end
         )).args == ([0],)
     end
     @testset "diagram recipe" begin
-        diag = PersistenceDiagram(0, [(1, 2), (2, 3), (3, ∞)])
+        diag = PersistenceDiagram(0, [(1, 2), (2, 3), (3, Inf)])
         @test only(series(typeof(diag), diag, letter=:x)).args == ([1, 2, 3],)
         @test only(series(typeof(diag), diag, letter=:y)).args == ([2, 3, Inf],)
         @test only(series(typeof(diag), diag, letter=:y, infinity=4)).args == ([2, 3, 4],)
@@ -81,7 +81,7 @@ end
         )).plotattributes[:seriestype] == :scatter
     end
     @testset "diagram plot" begin
-        diag1 = PersistenceDiagram(0, [(3, ∞), (1, 2), (3, 4)])
+        diag1 = PersistenceDiagram(0, [(3, Inf), (1, 2), (3, 4)])
         diag2 = PersistenceDiagram(1, [(1, 2), (3, 4)])
 
         @test n_series((diag1,)) == 1 + 1 + 1
@@ -99,7 +99,7 @@ end
         @test n_series(match) == 1 + 1 + 1 + 2
     end
     @testset "barcode plot" begin
-        diag1 = PersistenceDiagram(0, [(3, ∞), (1, 2), (3, 4)])
+        diag1 = PersistenceDiagram(0, [(3, Inf), (1, 2), (3, 4)])
         diag2 = PersistenceDiagram(1, [(1, 2), (3, 4)])
 
         @test n_series(Barcode((diag1,))) == 1 + 1
