@@ -13,6 +13,6 @@ end
 @safetestset "distances" begin
     include("distances.jl")
 end
-@safetestset "plotting" begin
-    include("plotting.jl")
+@safetestset "plotsrecipes" begin
+    include("plotsrecipes.jl")
 end
