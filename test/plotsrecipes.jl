@@ -2,6 +2,8 @@ using PersistenceDiagrams
 using PersistenceDiagrams: Barcode, InfinityLine, ZeroPersistenceLine
 using PersistenceDiagrams: dim_str, clamp_death, clamp_persistence, limits, set_default!
 
+using Compat
+
 using RecipesBase
 using RecipesBase: apply_recipe
 
@@ -49,7 +51,7 @@ end
 
 @testset "recipes" begin
     @testset "InfinityLine" begin
-        @test only(series(InfinityLine, InfinityLine(true))).args == ([NaN],)
+        @test isequal(only(series(InfinityLine, InfinityLine(true))).args, ([NaN],))
         @test only(series(InfinityLine, InfinityLine(true), infinity=5)).args == ([5],)
         @test only(series(
             InfinityLine, InfinityLine(true), infinity=5

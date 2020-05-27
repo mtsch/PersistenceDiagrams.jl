@@ -51,11 +51,6 @@ struct ZeroPersistenceLine end
     end
 end
 
-struct PersistenceDiagramsPlot
-    diags::Tuple
-    PersistenceDiagramsPlot(diags) = new((diags...))
-end
-
 @recipe function f(::Type{D}, diag::D) where D<:AbstractArray{<:PersistenceInterval}
     if plotattributes[:letter] == :x
         return birth.(diag)
