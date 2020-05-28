@@ -117,12 +117,15 @@ end
 @recipe function f(diags::NTuple{<:Any, PersistenceDiagram})
     setup_diagram_plot!(plotattributes, diags)
 
-    @series begin
-        primary := false
-        ZeroPersistenceLine()
-    end
-    @series begin
-        InfinityLine(false)
+    # Only plot these if this was constructed with plot, not plot!
+    if get(plotattributes, :plot_object, (n=0,)).n == 0
+        @series begin
+            primary := false
+            ZeroPersistenceLine()
+        end
+        @series begin
+            InfinityLine(false)
+        end
     end
 
     different_dims = allunique(dim.(diags))
@@ -148,6 +151,15 @@ function RecipesBase.plot(diag::PersistenceDiagram; kwargs...)
 end
 function RecipesBase.plot(diags::AbstractArray{<:PersistenceDiagram}; kwargs...)
     return RecipesBase.plot(diags...; kwargs...)
+end
+function RecipesBase.plot!(diags::Vararg{<:PersistenceDiagram}; kwargs...)
+    return RecipesBase.plot!(diags; kwargs...)
+end
+function RecipesBase.plot!(diag::PersistenceDiagram; kwargs...)
+    return RecipesBase.plot!((diag,); kwargs...)
+end
+function RecipesBase.plot!(diags::AbstractArray{<:PersistenceDiagram}; kwargs...)
+    return RecipesBase.plot!(diags...; kwargs...)
 end
 
 @recipe function f(match::Matching)
@@ -193,11 +205,12 @@ end
 end
 
 struct Barcode
-    diags::NTuple{<:Any, <:PersistenceDiagram}
+    diags::NTuple{<:Any, PersistenceDiagram}
 end
 
 Barcode(diag::PersistenceDiagram) = Barcode((diag,))
 Barcode(diags::AbstractArray{<:PersistenceDiagram}) = Barcode(tuple(diags...))
+Barcode(diags::Vararg{PersistenceDiagram}) = Barcode(diags)
 
 @recipe function f(bc::Barcode)
     diags = bc.diags
@@ -251,12 +264,4 @@ Plot the barcode plot of persistence diagram or multiple diagrams diagrams. The 
 keyword argument determines where the infinity line is placed. If unset, the function tries
 to use `threshold(diagram)` or guess a good position to place the line at.
 """
-barcode(args...; kwargs...) = RecipesBase.plot(Barcode(tuple(args...)); kwargs...)
-"""
-    barcode!(diagram)
-
-Plot the barcode plot of persistence diagram or multiple diagrams diagrams. The `infinity`
-keyword argument determines where the infinity line is placed. If unset, the function tries
-to use `threshold(diagram)` or guess a good position to place the line at.
-"""
-barcode!(args...; kwargs...) = RecipesBase.plot!(Barcode(tuple(args...)); kwargs...)
+barcode(args...; kwargs...) = RecipesBase.plot(Barcode(args...); kwargs...)

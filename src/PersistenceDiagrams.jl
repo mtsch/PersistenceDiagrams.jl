@@ -11,7 +11,7 @@ export PersistenceInterval, PersistenceDiagram
 export birth, death, persistence, representative, dim, threshold
 export Bottleneck, Wasserstein, Matching, distance, matching
 export PersistenceImage, transform, transform!
-export barcode, barcode!
+export barcode
 
 using Compat
 using Distances
