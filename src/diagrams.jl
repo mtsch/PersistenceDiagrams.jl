@@ -1,51 +1,36 @@
 # interval =============================================================================== #
 """
-    PersistenceInterval{T, C}
+    PersistenceInterval{T<:AbstractFloat, C}
 
 The type that represents a persistence interval. It behaves exactly like a
-`Tuple{T, Union{T, Infinity}}`, but may have a representative cocycle attached to it.
+`Tuple{T, T}`, but may have a representative cocycle attached to it.
 """
-struct PersistenceInterval{T, R}
-    birth          ::T
-    death          ::Union{T, Infinity}
-    representative ::R
-
-    function PersistenceInterval{T, R}(birth, death, rep::R=nothing) where {T, R}
-        if death ≡ ∞
-            return new{T, R}(T(birth), death, rep)
-        else
-            return new{T, R}(T(birth), T(death), rep)
-        end
-    end
-    function PersistenceInterval{T, R}((birth, death), rep::R=nothing) where {T, R}
-        if death ≡ ∞
-            return new{T, R}(T(birth), death, rep)
-        else
-            return new{T, R}(T(birth), T(death), rep)
-        end
-    end
+struct PersistenceInterval{R}
+    birth::Float64
+    death::Float64
+    representative::R
 end
 
-function PersistenceInterval(birth::T, death::Union{T, Infinity}, rep::R=nothing) where {T, R}
-    return PersistenceInterval{T, R}(birth, death, rep)
+function PersistenceInterval{Nothing}(birth::Real, death::Real)
+    return PersistenceInterval{Nothing}(Float64(birth), Float64(death), nothing)
 end
-function PersistenceInterval(t::Tuple{<:Any, <:Any})
-    return PersistenceInterval(t...)
+function PersistenceInterval(birth::Real, death::Real, rep::R=nothing) where R
+    return PersistenceInterval{R}(Float64(birth), Float64(death), rep)
 end
-function Base.convert(::Type{P}, tp::Tuple{<:Any, <:Any}) where P<:PersistenceInterval
-    return P(tp)
+function PersistenceInterval(t::Tuple{<:Any, <:Any}, rep=nothing)
+    return PersistenceInterval(t[1], t[2], rep)
+end
+function Base.convert(::Type{P}, t::Tuple{<:Any, <:Any}) where P<:PersistenceInterval
+    return P(t[1], t[2], nothing)
 end
 
 function Base.show(io::IO, int::PersistenceInterval)
-    print(io, "[", birth(int), ", ", death(int), ")")
-end
-function Base.show(io::IO, int::PersistenceInterval{<:AbstractFloat})
     b = round(birth(int), sigdigits=3)
     d = isfinite(death(int)) ? round(death(int), sigdigits=3) : "∞"
     print(io, "[$b, $d)")
 end
-function Base.show(io::IO, ::MIME"text/plain", int::PersistenceInterval{T}) where T
-    print(io, "PersistenceInterval{", T, "}", (birth(int), death(int)))
+function Base.show(io::IO, ::MIME"text/plain", int::PersistenceInterval)
+    print(io, "PersistenceInterval", (birth(int), death(int)))
     if !isnothing(int.representative)
         println(io, " with representative:")
         show(io, MIME"text/plain"(), representative(int))
@@ -71,7 +56,7 @@ death(int::PersistenceInterval) = int.death
 
 Get the persistence of `interval`, which is equal to `death - birth`.
 """
-persistence(int::PersistenceInterval) = isfinite(death(int)) ? death(int) - birth(int) : ∞
+persistence(int::PersistenceInterval) = death(int) - birth(int)
 
 Base.isfinite(int::PersistenceInterval) = isfinite(death(int))
 
@@ -85,8 +70,17 @@ function representative(int::PersistenceInterval)
     if !isnothing(int.representative)
         return int.representative
     else
-        error("$int has no representative. Run ripserer with `representatives=true`")
+        error("$int has no representative.")
     end
+end
+
+"""
+    stripped(int::PersistenceInterval)
+
+Return the same interval, without a representative.
+"""
+function stripped(int::PersistenceInterval)
+    PersistenceInterval{Nothing}(birth(int), death(int))
 end
 
 function Base.iterate(int::PersistenceInterval, i=1)
@@ -102,10 +96,7 @@ end
 Base.length(::PersistenceInterval) = 2
 Base.IteratorSize(::Type{<:PersistenceInterval}) = Base.HasLength()
 Base.IteratorEltype(::Type{<:PersistenceInterval}) = Base.HasEltype()
-Base.eltype(::Type{<:PersistenceInterval{T}}) where T = Union{T, Infinity}
-
-dist_type(::Type{<:PersistenceInterval{T}}) where T = T
-dist_type(::PersistenceInterval{T}) where T = T
+Base.eltype(::Type{<:PersistenceInterval}) = Float64
 
 function Base.getindex(int, i)
     if i == 1
@@ -138,77 +129,75 @@ Type for representing persistence diagrams. Behaves exactly like an array of
 `PersistenceInterval`s, but is aware of its dimension and supports pretty printing and
 plotting.
 """
-struct PersistenceDiagram{T, P<:PersistenceInterval{T}} <: AbstractVector{P}
+struct PersistenceDiagram{P<:PersistenceInterval} <: AbstractVector{P}
     dim       ::Int
     intervals ::Vector{P}
-    threshold ::Union{T, Infinity}
+    threshold ::Float64
 
-    function PersistenceDiagram(
-        dim, intervals::Vector{P}, threshold
-    ) where {T, P<:PersistenceInterval{T}}
-        return new{T, P}(dim, intervals, threshold ≡ ∞ ? ∞ : T(threshold))
+    function PersistenceDiagram(dim, intervals::Vector{<:PersistenceInterval}, threshold)
+        return new{eltype(intervals)}(dim, intervals, Float64(threshold))
     end
 end
 
-function PersistenceDiagram(dim, intervals; threshold=∞)
+function PersistenceDiagram(dim, intervals; threshold=Inf)
     return PersistenceDiagram(dim, intervals, threshold)
 end
-function PersistenceDiagram(dim, intervals::AbstractVector{<:Tuple}; threshold=∞)
+function PersistenceDiagram(dim, intervals::AbstractVector{<:Tuple}; threshold=Inf)
     return PersistenceDiagram(dim, PersistenceInterval.(intervals), threshold)
 end
 
-function show_intervals(io::IO, pd)
+function show_intervals(io::IO, diag)
     limit = get(io, :limit, false) ? first(displaysize(io)) : typemax(Int)
-    if length(pd) + 1 < limit
-        for i in eachindex(pd)
-            if isassigned(pd, i)
-                print(io, "\n ", pd[i])
+    if length(diag) + 1 < limit
+        for i in eachindex(diag)
+            if isassigned(diag, i)
+                print(io, "\n ", diag[i])
             else
                 print(io, "\n #undef")
             end
         end
     else
         for i in 1:limit÷2-2
-            if isassigned(pd, i)
-                print(io, "\n ", pd[i])
+            if isassigned(diag, i)
+                print(io, "\n ", diag[i])
             else
                 print(io, "\n #undef")
             end
         end
         print(io, "\n ⋮")
-        for i in lastindex(pd)-limit÷2+3:lastindex(pd)
-            if isassigned(pd, i)
-                print(io, "\n ", pd[i])
+        for i in lastindex(diag)-limit÷2+3:lastindex(diag)
+            if isassigned(diag, i)
+                print(io, "\n ", diag[i])
             else
                 print(io, "\n #undef")
             end
         end
     end
 end
-function Base.show(io::IO, pd::PersistenceDiagram)
-    print(io, length(pd), "-element ", dim(pd), "-dimensional PersistenceDiagram")
+function Base.show(io::IO, diag::PersistenceDiagram)
+    print(io, length(diag), "-element ", dim(diag), "-dimensional PersistenceDiagram")
 end
-function Base.show(io::IO, ::MIME"text/plain", pd::PersistenceDiagram)
-    print(io, pd)
-    if length(pd) > 0
+function Base.show(io::IO, ::MIME"text/plain", diag::PersistenceDiagram)
+    print(io, diag)
+    if length(diag) > 0
         print(io, ":")
-        show_intervals(io, pd.intervals)
+        show_intervals(io, diag.intervals)
     end
 end
 
-threshold(pd::PersistenceDiagram) = pd.threshold
+threshold(diag::PersistenceDiagram) = diag.threshold
 
-Base.size(pd::PersistenceDiagram) = size(pd.intervals)
-Base.getindex(pd::PersistenceDiagram, i::Integer) = pd.intervals[i]
-Base.setindex!(pd::PersistenceDiagram, x, i::Integer) = pd.intervals[i] = x
-Base.firstindex(pd::PersistenceDiagram) = 1
-Base.lastindex(pd::PersistenceDiagram) = length(pd.intervals)
+Base.size(diag::PersistenceDiagram) = size(diag.intervals)
+Base.getindex(diag::PersistenceDiagram, i::Integer) = diag.intervals[i]
+Base.setindex!(diag::PersistenceDiagram, x, i::Integer) = diag.intervals[i] = x
+Base.firstindex(diag::PersistenceDiagram) = 1
+Base.lastindex(diag::PersistenceDiagram) = length(diag.intervals)
 
-function Base.similar(pd::PersistenceDiagram)
-    return PersistenceDiagram(dim(pd), similar(pd.intervals), threshold(pd))
+function Base.similar(diag::PersistenceDiagram)
+    return PersistenceDiagram(dim(diag), similar(diag.intervals), threshold(diag))
 end
-function Base.similar(pd::PersistenceDiagram, dims::Tuple)
-    return PersistenceDiagram(dim(pd), similar(pd.intervals, dims), threshold(pd))
+function Base.similar(diag::PersistenceDiagram, dims::Tuple)
+    return PersistenceDiagram(dim(diag), similar(diag.intervals, dims), threshold(diag))
 end
 
 """
@@ -216,7 +205,8 @@ end
 
 Get the dimension of persistence diagram.
 """
-dim(pd::PersistenceDiagram) = pd.dim
+dim(diag::PersistenceDiagram) = diag.dim
 
-dist_type(pd::PersistenceDiagram) = dist_type(eltype(pd))
-dist_type(::Type{P}) where P<:PersistenceDiagram = dist_type(eltype(P))
+function stripped(diag::PersistenceDiagram)
+    return PersistenceDiagram(dim(diag), stripped.(diag), threshold=threshold(diag))
+end

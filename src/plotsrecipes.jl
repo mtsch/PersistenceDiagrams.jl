@@ -76,7 +76,7 @@ function limits(diags, pers)
         ys = map.(death, diags)
     end
     t_lo = min(minimum(t for t in Iterators.flatten((xs..., ys...))), 0.0)
-    t_hi = maximum(t for t in Iterators.flatten((xs..., ys...)) if t < ∞)
+    t_hi = maximum(t for t in Iterators.flatten((xs..., ys...)) if t < Inf)
 
     threshes = filter(isfinite, threshold.(diags))
     if !isempty(threshes)

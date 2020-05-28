@@ -15,30 +15,18 @@ A matching between two persistence diagrams.
 * [`distance(::Matching)`](@ref)
 * [`matching(::Matching)`](@ref)
 """
-struct Matching{T, L, R}
-    left::L
-    right::R
-    weight::T
-    match_left::Vector{Int}
-    match_right::Vector{Int}
+struct Matching
+    left::PersistenceDiagram{PersistenceInterval{Nothing}}
+    right::PersistenceDiagram{PersistenceInterval{Nothing}}
+    weight::Float64
+    matching::Vector{Pair{Int, Int}}
     bottleneck::Bool
-end
 
-function Matching(left, right, weight, match, bottleneck)
-    n = length(left)
-    m = length(right)
-    if isempty(match)
-        return Matching(left, right, weight, Int[], Int[], bottleneck)
-    else
-        match_left = fill(0, n + m)
-        match_right = fill(0, m + n)
-        for (l, r) in match
-            match_left[l] = r
-            match_right[r] = l
-        end
-        return Matching(left, right, weight, match_left, match_right, bottleneck)
+    function Matching(left, right, weight, matching, bottleneck)
+        new(stripped(left), stripped(right), weight, matching, bottleneck)
     end
 end
+
 
 """
     distance(::Matching)
@@ -47,16 +35,16 @@ Get the weight of a `Matching` object.
 """
 distance(match::Matching) = match.weight
 
-Base.length(match::Matching) = length(matching(match))
-Base.isempty(match::Matching) = isempty(match.match_left)
+Base.length(match::Matching) = length(match.matching)
+Base.isempty(match::Matching) = isempty(match.matching)
 
-function distance(int1::PersistenceInterval, int2::PersistenceInterval)
+function distance(int1, int2)
     if isfinite(int1) && isfinite(int2)
         return max(abs(birth(int1) - birth(int2)), abs(death(int1) - death(int2)))
     elseif isfinite(int1) && isfinite(int2)
         return abs(birth(int1) - birth(int2))
     else
-        return ∞
+        return Inf
     end
 end
 
@@ -67,43 +55,30 @@ Get the matching of a `Matching` object represented by a vector of pairs of inte
 `bottleneck` is set to true, only return the edges with length equal to the weight of the
 matching.
 """
-function matching(match::Matching{T}; bottleneck=match.bottleneck) where T
+function matching(match::Matching; bottleneck=match.bottleneck)
+    P = PersistenceInterval{Nothing}
+    result = Pair{P, P}[]
     n = length(match.left)
     m = length(match.right)
-    P = PersistenceInterval{T, Nothing}
+    for (i, j) in match.matching
+        if i ≤ n && j ≤ m
+            push!(result, match.left[i] => match.right[j])
+        elseif i ≤ n
+            # left is matched to diagonal
+            l = match.left[i]
+            push!(result, match.left[i] => P(birth(l), birth(l)))
+        elseif j ≤ m
+            # right is matched to diagonal
+            r = match.right[j]
+            push!(result, P(birth(r), birth(r)) => r)
+        end
+    end
+    sort!(result)
 
-    if !isempty(match)
-        # We convert both sides to `PersistenceInterval{T}` in case their types don't match.
-        result = Pair{P, P}[]
-        for i in 1:n
-            l = P(match.left[i]...)
-            j = match.match_left[i]
-            if j > m
-                r = P(birth(l), birth(l))
-            else
-                r = P(match.right[j]...)
-            end
-            push!(result, l => r)
-        end
-        # Collect rights matched to diagonals.
-        for j in 1:m
-            r = P(match.right[j]...)
-            i = match.match_right[j]
-            if i > n
-                l = P(birth(r), birth(r))
-            else
-                continue
-            end
-            push!(result, l => r)
-        end
-        sort!(result)
-        if !bottleneck
-            return result
-        else
-            return filter!(m -> distance(m...) == match.weight, result)
-        end
+    if !bottleneck
+        return result
     else
-        return P[]
+        return filter!(m -> distance(m...) == match.weight, result)
     end
 end
 
@@ -119,23 +94,29 @@ function Base.show(io::IO, ::MIME"text/plain", match::Matching)
     end
 end
 
-"""
-    adj_matrix(diag1::PersistenceDiagram, diag2::PersistenceDiagram, power)
+"convert n-element diagram to 2×n matrix"
+function _to_matrix(diag)
+    pts = Tuple{Float64, Float64}[(birth(i), death(i)) for i in diag if isfinite(i)]
+    return reshape(reinterpret(Float64, pts), (2, length(pts)))
+end
 
-Get the adjacency matrix of the matching between `diag1` and `diag2`. Edge weights are equal
+"""
+    adj_matrix(left::PersistenceDiagram, right::PersistenceDiagram, power)
+
+Get the adjacency matrix of the matching between `left` and `right`. Edge weights are equal
 to distances between intervals raised to the power of `power`. Distances between diagonal
-points and values that should not be matched with them are set to `typemax(T)`. The same
+points and values that should not be matched with them are set to `Inf`. The same
 holds for distances between finite and infinite intervals.
 
-For `length(diag1) == n` and `length(diag2) == m`, it returns a ``(n m) × (m n)`` matrix.
+For `length(left) == n` and `length(right) == m`, it returns a ``(n m) × (m n)`` matrix.
 
 # Example
 
 ```jldoctest
-diag1 = PersistenceDiagram(0, [(0.0, 1.0), (3.0, 4.5)])
-diag2 = PersistenceDiagram(0, [(0.0, 1.0), (4.0, 5.0), (4.0, 7.0)])
+left = PersistenceDiagram(0, [(0.0, 1.0), (3.0, 4.5)])
+right = PersistenceDiagram(0, [(0.0, 1.0), (4.0, 5.0), (4.0, 7.0)])
 
-adj_matrix(diag1, diag2)
+adj_matrix(left, right)
 
 # output
 
@@ -147,36 +128,26 @@ adj_matrix(diag1, diag2)
  Inf    1.5   0.0   0.0   0.0
 ```
 """
-function adj_matrix(diag1, diag2, power=1)
-    function _to_matrix(diag, T)
-        pts = Tuple{T, T}[T.((birth(i), death(i))) for i in diag if isfinite(i)]
-        return reshape(reinterpret(T, pts), (2, length(pts)))
-    end
-    sort!(diag1, by=death)
-    sort!(diag2, by=death)
+function adj_matrix(left, right, power=1)
+    sort!(left, by=death)
+    sort!(right, by=death)
 
-    # float to handle inf correctly.
-    T = float(promote_type(dist_type(diag1), dist_type(diag2), typeof(power)))
-    P = PersistenceInterval{T, Nothing}
+    n = length(left)
+    m = length(right)
+    adj = fill(Inf, n + m, m + n)
 
-    n = length(diag1)
-    m = length(diag2)
-    adj = fill(typemax(T), n + m, m + n)
-
-    dists = pairwise(Chebyshev(), _to_matrix(diag2, T), _to_matrix(diag1, T), dims=2)
+    dists = pairwise(Chebyshev(), _to_matrix(right), _to_matrix(left), dims=2)
     adj[axes(dists)...] .= dists
     for i in size(dists, 2)+1:n, j in size(dists, 1)+1:m
-        adj[j, i] = abs(birth(diag1[i]) - birth(diag2[j]))
+        adj[j, i] = abs(birth(left[i]) - birth(right[j]))
     end
     for i in 1:n
-        p = persistence(diag1[i])
-        adj[i + m, i] = p ≡ ∞ ? typemax(T) : p
+        adj[i + m, i] = persistence(left[i])
     end
     for j in 1:m
-        p = persistence(diag2[j])
-        adj[j, j + n] = p ≡ ∞ ? typemax(T) : p
+        adj[j, j + n] = persistence(right[j])
     end
-    adj[m + 1:m + n, n + 1:n + m] .= zero(T)
+    adj[m + 1:m + n, n + 1:n + m] .= 0.0
 
     if power ≠ 1
         return adj.^power
@@ -186,7 +157,7 @@ function adj_matrix(diag1, diag2, power=1)
 end
 
 """
-    BottleneckGraph{T}
+    BottleneckGraph
 
 Representation of the bipartite graph used for computing bottleneck distance via the
 Hopcroft-Karp algorithm. In all the following functions, `left` and `right` refer to the
@@ -195,29 +166,28 @@ numbers of points in the diagrams plus the diagonals.
 
 # Fields
 
-* `adj::Matrix{T}`: the adjacency matrix.
+* `adj::Matrix{Float64}`: the adjacency matrix.
 * `match_left::Vector{Int}`: matches of left vertices.
 * `match_right::Vector{Int}`: matches of right vertices.
-* `edges::Vector{T}`: edge lengths, unique and sorted.
+* `edges::Vector{Float64}`: edge lengths, unique and sorted.
 * `n::Int`: number of intervals in left diagram.
 * `m::Int`: number of intervals in right diagram.
 """
-struct BottleneckGraph{T}
-    adj::Matrix{T}
+struct BottleneckGraph
+    adj::Matrix{Float64}
 
     match_left::Vector{Int}
     match_right::Vector{Int}
 
-    edges::Vector{T}
+    edges::Vector{Float64}
 
     n_vertices::Int
 end
 
-function BottleneckGraph(diag1::PersistenceDiagram, diag2::PersistenceDiagram)
-    n = length(diag1)
-    m = length(diag2)
-    adj = adj_matrix(diag1, diag2)
-    T = eltype(adj)
+function BottleneckGraph(left::PersistenceDiagram, right::PersistenceDiagram)
+    n = length(left)
+    m = length(right)
+    adj = adj_matrix(left, right)
 
     edges = filter!(isfinite, sort!(unique!(copy(vec(adj)))))
 
@@ -356,7 +326,7 @@ function hopcroft_karp!(graph, ε)
         end
         paths = augmenting_paths(graph, ε)
     end
-    matching = [(i, graph.match_left[i])
+    matching = [i => graph.match_left[i]
                 for i in 1:graph.n_vertices if graph.match_left[i] ≠ 0]
     is_perfect = length(matching) == graph.n_vertices
 
@@ -389,15 +359,15 @@ Computing the bottleneck distance requires ``\\mathcal{O}(n^2)`` space!
 struct Bottleneck end
 
 """
-    matching(::Bottleneck, diag1, diag2)
+    matching(::Bottleneck, left, right)
 
-Find the bottleneck matching between persistence diagrams `diag1` and `diag2`. Infinite
-intervals are ignored.
+Find the bottleneck matching between persistence diagrams `left` and `right`. Infinite
+intervals are matched to eachother.
 
 ```jldoctest
-diag1 = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
-diag2 = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
-matching(Bottleneck(), diag1, diag2)
+left = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
+right = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
+matching(Bottleneck(), left, right)
 
 # Example
 
@@ -414,12 +384,12 @@ matching(Bottleneck(), diag1, diag2)
 * [`Bottleneck`](@ref)
 * [`distance`](@ref)
 """
-function matching(::Bottleneck, diag1, diag2)
-    if count(!isfinite, diag1) ≠ count(!isfinite, diag2)
-        return Matching(diag1, diag2, ∞, [], true)
+function matching(::Bottleneck, left, right)
+    if count(!isfinite, left) ≠ count(!isfinite, right)
+        return Matching(left, right, Inf, Pair{Int, Int}[], true)
     end
 
-    graph = BottleneckGraph(diag1, diag2)
+    graph = BottleneckGraph(left, right)
     edges = graph.edges
 
     lo = 1
@@ -439,23 +409,22 @@ function matching(::Bottleneck, diag1, diag2)
         distance = edges[hi]
         match, _ = hopcroft_karp!(graph, edges[hi])
     end
-    @assert length(match) == length(diag1) + length(diag2)
-    T = promote_type(dist_type(diag1), dist_type(diag2))
-    return Matching(diag1, diag2, T(distance), match, true)
+    @assert length(match) == length(left) + length(right)
+    return Matching(left, right, distance, match, true)
 end
 
 """
-    distance(::Bottleneck, diag1, diag2)
+    distance(::Bottleneck, left, right)
 
-Compute the bottleneck distance between persistence diagrams `diag1` and `diag2`. Infinite
-intervals are ignored.
+Compute the bottleneck distance between persistence diagrams `left` and `right`. Infinite
+intervals are matched to eachother.
 
 # Example
 
 ```jldoctest
-diag1 = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
-diag2 = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
-distance(Bottleneck(), diag1, diag2)
+left = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
+right = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
+distance(Bottleneck(), left, right)
 
 # output
 
@@ -467,7 +436,7 @@ distance(Bottleneck(), diag1, diag2)
 * [`Bottleneck`](@ref)
 * [`matching`](@ref)
 """
-distance(::Bottleneck, diag1, diag2) = matching(Bottleneck(), diag1, diag2).weight
+distance(::Bottleneck, left, right) = matching(Bottleneck(), left, right).weight
 
 """
     Wasserstein(q=1)
@@ -493,24 +462,24 @@ Computing the Wasserstein distance requires ``\\mathcal{O}(n^2)`` space!
   [`Matching`](@ref).
 * [`distance(::Wasserstein, ::Any, ::Any)`](@ref): find the Wasserstein distance.
 """
-struct Wasserstein{T}
-    q::T
+struct Wasserstein
+    q::Float64
 
-    Wasserstein(q=1) = new{typeof(q)}(q)
+    Wasserstein(q=1) = new(Float64(q))
 end
 
 """
-    matching(::Wasserstein, diag1, diag2)
+    matching(::Wasserstein, left, right)
 
-Find the Wasserstein matching between persistence diagrams `diag1` and `diag2`. Infinite
-intervals are ignored.
+Find the Wasserstein matching between persistence diagrams `left` and `right`. Infinite
+intervals are matched to eachother.
 
 # Example
 
 ```jldoctest
-diag1 = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
-diag2 = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
-matching(Wasserstein(), diag1, diag2)
+left = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
+right = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
+matching(Wasserstein(), left, right)
 
 # output
 
@@ -525,35 +494,30 @@ matching(Wasserstein(), diag1, diag2)
 * [`Wasserstein`](@ref)
 * [`distance`](@ref)
 """
-function matching(w::Wasserstein, diag1, diag2)
-    if count(!isfinite, diag1) == count(!isfinite, diag2)
-        adj = adj_matrix(diag2, diag1, w.q)
-        match = collect(enumerate(hungarian(adj)[1]))
-        distance = sum(adj[i, j] for (i, j) in match)
+function matching(w::Wasserstein, left, right)
+    if count(!isfinite, left) == count(!isfinite, right)
+        adj = adj_matrix(right, left, w.q)
+        match = collect(i => j for (i, j) in enumerate(hungarian(adj)[1]))
+        distance = sum(adj[i, j] for (i, j) in match)^(1 / w.q)
 
-        if w.q == 1
-            T = promote_type(dist_type(diag1), dist_type(diag2))
-            return Matching(diag1, diag2, T(distance), match, false)
-        else
-            return Matching(diag1, diag2, distance^(1/w.q), match, false)
-        end
+        return Matching(left, right, distance, match, false)
     else
-        return Matching(diag1, diag2, ∞, [], false)
+        return Matching(left, right, Inf, Pair{Int, Int}[], false)
     end
 end
 
 """
-    distance(::Wasserstein, diag1, diag2)
+    distance(::Wasserstein, left, right)
 
-Compute the Wasserstein distance between persistence diagrams `diag1` and `diag2`. Infinite
-intervals are ignored.
+Compute the Wasserstein distance between persistence diagrams `left` and `right`. Infinite
+intervals are matched to eachother.
 
 # Example
 
 ```jldoctest
-diag1 = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
-diag2 = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
-distance(Wasserstein(), diag1, diag2)
+left = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
+right = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
+distance(Wasserstein(), left, right)
 
 # output
 
@@ -565,4 +529,4 @@ distance(Wasserstein(), diag1, diag2)
 * [`Wasserstein`](@ref)
 * [`matching`](@ref)
 """
-distance(w::Wasserstein, diag1, diag2) = matching(w, diag1, diag2).weight
+distance(w::Wasserstein, left, right) = matching(w, left, right).weight
