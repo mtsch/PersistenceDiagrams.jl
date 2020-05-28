@@ -196,6 +196,9 @@ struct Barcode
     diags::NTuple{<:Any, <:PersistenceDiagram}
 end
 
+Barcode(diag::PersistenceDiagram) = Barcode((diag,))
+Barcode(diags::AbstractArray{<:PersistenceDiagram}) = Barcode(tuple(diags...))
+
 @recipe function f(bc::Barcode)
     diags = bc.diags
 
