@@ -146,6 +146,9 @@ end
 function RecipesBase.plot(diag::PersistenceDiagram; kwargs...)
     return RecipesBase.plot((diag,); kwargs...)
 end
+function RecipesBase.plot(diags::AbstractArray{<:PersistenceDiagram}; kwargs...)
+    return RecipesBase.plot(diags...; kwargs...)
+end
 
 @recipe function f(match::Matching)
     left = match.left

@@ -1,3 +1,10 @@
+"""
+# PersistenceDiagrams.jl
+
+Types and functions for working with persistence diagrams.
+
+See https://mtsch.github.io/PersistenceDiagrams.jl/dev/ for documentation.
+"""
 module PersistenceDiagrams
 
 export PersistenceInterval, PersistenceDiagram
