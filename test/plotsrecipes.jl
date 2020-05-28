@@ -102,9 +102,9 @@ end
         diag1 = PersistenceDiagram(0, [(3, Inf), (1, 2), (3, 4)])
         diag2 = PersistenceDiagram(1, [(1, 2), (3, 4)])
 
-        @test n_series(Barcode((diag1,))) == 1 + 1
+        @test n_series(Barcode(diag1)) == 1 + 1
         @test n_series(Barcode((diag1,)), infinity=5) == 1 + 1
         @test n_series(Barcode((diag1, diag2))) == 1 + 2
-        @test n_series(Barcode((diag1, diag2)), infinity=5) == 1 + 2
+        @test n_series(Barcode([diag1, diag2]), infinity=5) == 1 + 2
     end
 end
