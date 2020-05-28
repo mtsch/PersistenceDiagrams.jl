@@ -1,7 +1,7 @@
 # # Distances
 
 # In this example we will demonstrate computing distances between persistence diagrams.
-# We will use (Ripserer.jl)[https://github.com/mtsch/Ripserer.jl] to generate the diagrams.
+# We will use [Ripserer.jl](https://github.com/mtsch/Ripserer.jl) to generate the diagrams.
 
 using Ripserer
 using PersistenceDiagrams

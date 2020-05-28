@@ -15,11 +15,9 @@ finite_interval = PersistenceInterval(1, 2)
 
 birth(finite_interval), death(finite_interval), persistence(finite_interval)
 
-# To represent infinite intervals, we introduce the type `Infinity`, which allows us to
-# represent infinite intervals when the `eltype` of the interval is not a float and as such
-# has no native representation of infinity.
+# To represent infinite intervals, we use the floating point value `Inf`.
 
-infinite_interval = PersistenceInterval(0, ∞)
+infinite_interval = PersistenceInterval(0, Inf)
 
 # The finiteness of the interval can be checked with the `isfinite` function from `Base`.
 
@@ -67,7 +65,7 @@ threshold(diagram_1)
 
 # Alternatively, we can also construct a diagram by passing it an array of tuples.
 
-diagram_2 = PersistenceDiagram(1, [(0, 1), (4, 7), (5, ∞)])
+diagram_2 = PersistenceDiagram(1, [(0, 1), (4, 7), (5, Inf)])
 
 # We plot a diagram by calling the `plot` function from
 # [Plots.jl](https://github.com/JuliaPlots/Plots.jl).
