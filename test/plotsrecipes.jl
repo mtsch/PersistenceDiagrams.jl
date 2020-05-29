@@ -34,14 +34,12 @@ n_series(args...; kwargs...) = length(series(args...; kwargs...))
     diag3 = PersistenceDiagram(0, [(0, 2), (2, 3), (2, Inf)], threshold=6)
     diag4 = PersistenceDiagram(0, [(0, 2), (2, 3), (2, 5)], threshold=7)
 
-    @test limits((diag1,), false) == (0, 3 * 1.25, 3 * 1.25)
-    @test limits((diag1,), true) == (0, 2 * 1.25, 2 * 1.25)
-    @test limits((diag2,), false) == (0, 5, 5 * 1.25)
-    @test limits((diag2,), true) == (0, 3, 3 * 1.25)
-    @test limits((diag1, diag3), false) == (0, 6, 6)
-    @test limits((diag1, diag4), true) == (0, 7, 7)
-    @test limits((diag2, diag4), false) == (0, 5, 7)
-    @test limits((diag2, diag3), true) == (0, 6, 6)
+    @test limits((diag1,)) == (0, 3 * 1.25, 3 * 1.25)
+    @test limits((diag2,)) == (0, 5, 5 * 1.25)
+    @test limits((diag1, diag3)) == (0, 6, 6)
+    @test limits((diag1, diag4)) == (0, 7, 7)
+    @test limits((diag2, diag4)) == (0, 5, 7)
+    @test limits((diag2, diag3)) == (0, 6, 6)
 
     d = set_default!(Dict(:a => 1), :a, 2)
     @test d[:a] == 1
@@ -83,6 +81,7 @@ end
     @testset "diagram plot" begin
         diag1 = PersistenceDiagram(0, [(3, Inf), (1, 2), (3, 4)])
         diag2 = PersistenceDiagram(1, [(1, 2), (3, 4)])
+        diag3 = PersistenceDiagram(1, PersistenceInterval{Nothing}[])
 
         @test n_series((diag1,)) == 1 + 1 + 1
         @test n_series((diag1,), infinity=5) == 1 + 1 + 1
@@ -90,6 +89,8 @@ end
         @test n_series((diag1, diag2)) == 1 + 1 + 2
         @test n_series((diag1, diag2), infinity=5) == 1 + 1 + 2
         @test n_series((diag1, diag2), persistence=true) == 1 + 1 + 2
+        @test n_series((diag3,), persistence=true) == 1 + 1 + 1
+        @test n_series((diag3, diag3), persistence=true) == 1 + 1 + 2
     end
     @testset "matching plot" begin
         diag1 = PersistenceDiagram(0, [(3, 4), (1, 2), (3, 4)])
@@ -101,10 +102,14 @@ end
     @testset "barcode plot" begin
         diag1 = PersistenceDiagram(0, [(3, Inf), (1, 2), (3, 4)])
         diag2 = PersistenceDiagram(1, [(1, 2), (3, 4)])
+        diag3 = PersistenceDiagram(1, PersistenceInterval{Nothing}[])
 
         @test n_series(Barcode(diag1)) == 1 + 1
         @test n_series(Barcode((diag1,)), infinity=5) == 1 + 1
         @test n_series(Barcode((diag1, diag2))) == 1 + 2
         @test n_series(Barcode([diag1, diag2]), infinity=5) == 1 + 2
+        @test n_series(Barcode(typeof(diag1)[])) == 1
+        @test n_series(Barcode(diag3)) == 2
+        @test n_series(Barcode(diag3, diag3)) == 3
     end
 end
