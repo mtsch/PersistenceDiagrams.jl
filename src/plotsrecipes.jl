@@ -68,15 +68,13 @@ end
     x, y
 end
 
-function limits(diags, pers)
+function limits(diags)
     xs = map.(birth, diags)
-    if pers
-        ys = map.(persistence, diags)
-    else
-        ys = map.(death, diags)
-    end
-    t_lo = min(minimum(t for t in Iterators.flatten((xs..., ys...))), 0.0)
-    t_hi = maximum(t for t in Iterators.flatten((xs..., ys...)) if t < Inf)
+    ys = map.(death, diags)
+
+    # Use reduce insted of maximum/minimum because it handles empty collections
+    t_lo = reduce(min, t for t in Iterators.flatten((xs..., ys...)); init=0.0)
+    t_hi = reduce(max, t for t in Iterators.flatten((xs..., ys...)) if t < Inf; init=0.0)
 
     threshes = filter(isfinite, threshold.(diags))
     if !isempty(threshes)
@@ -98,7 +96,7 @@ end
 
 function setup_diagram_plot!(d, diags)
     set_default!(d, :persistence, false)
-    t_lo, t_hi, infinity = limits(diags, d[:persistence])
+    t_lo, t_hi, infinity = limits(diags)
     # Zero persistence line messes up the limits, so we attempt to reset them here.
     gap = (t_hi - t_lo) * 0.05
     if gap > 0
@@ -215,7 +213,7 @@ Barcode(diags::Vararg{PersistenceDiagram}) = Barcode(diags)
 @recipe function f(bc::Barcode)
     diags = bc.diags
 
-    t_lo, t_hi, infinity = limits(diags, false)
+    t_lo, t_hi, infinity = limits(diags)
     infinity --> infinity
     yticks --> []
     xguide --> "t"
@@ -225,7 +223,7 @@ Barcode(diags::Vararg{PersistenceDiagram}) = Barcode(diags)
     _bar_offset --> 0
     bar_offset = plotattributes[:_bar_offset]
     # Infinity line series messes up the limits.
-    n_intervals = sum(length, diags) + bar_offset
+    n_intervals = mapreduce(length, +, diags, init=0) + bar_offset
     ylims --> (1 - n_intervals * 0.05, n_intervals * 1.05)
 
     @series begin
