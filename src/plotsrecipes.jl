@@ -68,7 +68,7 @@ end
     x, y
 end
 
-function limits(diags)
+function limits(diags, infinity=nothing)
     xs = map.(birth, diags)
     ys = map.(death, diags)
 
@@ -77,10 +77,12 @@ function limits(diags)
     t_hi = reduce(max, t for t in Iterators.flatten((xs..., ys...)) if t < Inf; init=0.0)
 
     threshes = filter(isfinite, threshold.(diags))
-    if !isempty(threshes)
-        infinity = maximum(threshes)
-    else
-        infinity = t_hi * 1.25
+    if isnothing(infinity)
+        if !isempty(threshes)
+            infinity = maximum(threshes)
+        else
+            infinity = t_hi * 1.25
+        end
     end
     if any(!isfinite, Iterators.flatten(ys))
         t_hi = infinity
@@ -96,7 +98,7 @@ end
 
 function setup_diagram_plot!(d, diags)
     set_default!(d, :persistence, false)
-    t_lo, t_hi, infinity = limits(diags)
+    t_lo, t_hi, infinity = limits(diags, get(d, :infinity, nothing))
     # Zero persistence line messes up the limits, so we attempt to reset them here.
     gap = (t_hi - t_lo) * 0.05
     if gap > 0
