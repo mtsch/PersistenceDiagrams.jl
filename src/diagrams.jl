@@ -98,7 +98,7 @@ Base.IteratorSize(::Type{<:PersistenceInterval}) = Base.HasLength()
 Base.IteratorEltype(::Type{<:PersistenceInterval}) = Base.HasEltype()
 Base.eltype(::Type{<:PersistenceInterval}) = Float64
 
-function Base.getindex(int, i)
+function Base.getindex(int::PersistenceInterval, i)
     if i == 1
         return birth(int)
     elseif i == 2
