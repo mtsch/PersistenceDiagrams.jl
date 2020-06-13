@@ -19,10 +19,21 @@ function (bi::Binormal)(x, y)
 end
 
 """
-    PersistenceImage <: AbstractDiagramTransformer
+    PersistenceImage
 
-This type encodes the hyperparameters used in persistence image construction. To transform a
-diagram, call the `PersistenceImage` as a function.
+`PersistenceImage` provides a vectorization method for persistence diagrams. Each point in
+the diagram is first transformed into `birth`, `persistence` coordinates. Then, it is
+weighted by a weighting function and widened by a distribution (default: gaussian with σ=1).
+Once all the points are transformed, their distributions are summed together and discretized
+into an image.
+
+The weighting ensures points near the diagonal have a small contribution. This ensures this
+representation of the diagram is stable.
+
+Once a `PersistenceImage` is constructed (see below), it can called like a function to
+transform a diagram to an image.
+
+Infinite intervals in the diagram are ignored.
 
 # Constructors
 

@@ -11,7 +11,10 @@ end
     include("matching.jl")
 end
 @safetestset "images" begin
-    include("images.jl")
+    include("persistenceimages.jl")
+end
+@safetestset "betticurves" begin
+    include("betticurves.jl")
 end
 @safetestset "plotsrecipes" begin
     include("plotsrecipes.jl")

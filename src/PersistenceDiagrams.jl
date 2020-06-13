@@ -10,7 +10,7 @@ module PersistenceDiagrams
 export PersistenceInterval, PersistenceDiagram
 export birth, death, persistence, representative, dim, threshold
 export Bottleneck, Wasserstein, weight, matching
-export PersistenceImage
+export PersistenceImage, BettiCurve
 export barcode
 
 using Compat
@@ -21,8 +21,8 @@ using RecipesBase
 include("diagrams.jl")
 
 include("matching.jl")
-include("transformers.jl")
-include("images.jl")
+include("persistenceimages.jl")
+include("betticurves.jl")
 
 include("plotsrecipes.jl")
 
