@@ -10,4 +10,5 @@ This package currently supports the following.
 
 * Persistence diagram plotting.
 * Bottleneck and Wasserstein matching and distance computation.
+* Betti curves.
 * Persistence images.

@@ -21,8 +21,8 @@ using RecipesBase
 include("diagrams.jl")
 
 include("matching.jl")
-include("persistenceimages.jl")
 include("betticurves.jl")
+include("persistenceimages.jl")
 
 include("plotsrecipes.jl")
 

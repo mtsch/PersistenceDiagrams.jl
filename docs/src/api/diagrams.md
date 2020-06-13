@@ -31,14 +31,6 @@ barcode(::Union{PersistenceDiagram, AbstractVector{<:PersistenceDiagram}})
 ## Distances Between Persistence Diagrams
 
 ```@docs
-matching
-```
-
-```@docs
-distance
-```
-
-```@docs
 Bottleneck
 ```
 
@@ -47,5 +39,23 @@ Wasserstein
 ```
 
 ```@docs
+matching
+```
+
+```@docs
+weight
+```
+
+```@docs
 Matching
+```
+
+## Persistence Diagram Vectorization Methods
+
+```@docs
+BettiCurve
+```
+
+```@docs
+PersistenceImage
 ```
