@@ -9,8 +9,8 @@ module PersistenceDiagrams
 
 export PersistenceInterval, PersistenceDiagram
 export birth, death, persistence, representative, dim, threshold
-export Bottleneck, Wasserstein, Matching, distance, matching
-export PersistenceImage, transform, transform!
+export Bottleneck, Wasserstein, weight, matching
+export PersistenceImage
 export barcode
 
 using Compat
