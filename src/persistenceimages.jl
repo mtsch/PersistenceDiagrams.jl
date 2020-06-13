@@ -1,7 +1,3 @@
-"""
-
-The default weighting function, as described in ...
-"""
 struct DefaultWeightingFunction
     b::Float64
 end
@@ -23,15 +19,26 @@ function (bi::Binormal)(x, y)
 end
 
 """
-    PersistenceImage <: AbstractDiagramTransformer
+    PersistenceImage
 
-This type encodes the hyperparameters used in persistence image construction. To actually
-transform a diagram, use [`transform`](@ref).
+`PersistenceImage` provides a vectorization method for persistence diagrams. Each point in
+the diagram is first transformed into `birth`, `persistence` coordinates. Then, it is
+weighted by a weighting function and widened by a distribution (default: gaussian with σ=1).
+Once all the points are transformed, their distributions are summed together and discretized
+into an image.
+
+The weighting ensures points near the diagonal have a small contribution. This ensures this
+representation of the diagram is stable.
+
+Once a `PersistenceImage` is constructed (see below), it can called like a function to
+transform a diagram to an image.
+
+Infinite intervals in the diagram are ignored.
 
 # Constructors
 
-    PersistenceImage(ylims, xlims; size=50, kwargs...)
-    PersistenceImage(diagrams; size=50, kwargs...)
+* `PersistenceImage(ylims, xlims; size=5, kwargs...)`
+* `PersistenceImage(diagrams; size=5, kwargs...)`
 
 ## Arguments
 
@@ -51,13 +58,38 @@ transform a diagram, use [`transform`](@ref).
 * `weight`: A function or callable object used as the weighting function. Has to be callable
   with two `Float64`s as input and should return a `Float64`. Should equal 0.0 for x=0, but
   this is not enforced.
-* `slope_end`: the y value at which the default weight function stops increasing.
+* `slope_end`: the ``y`` value at which the default weight function stops increasing.
 * `size`: integer or tuple of two integers. Determines the size of the array containing the
-  image. Defaults to 50.
+  image. Defaults to 5.
+
+# Example
+
+```jldoctest
+diag_1 = PersistenceDiagram(0, [(0, 1), (0, 1.5), (1, 2)])
+diag_2 = PersistenceDiagram(0, [(1, 2), (1, 1.5)])
+image = PersistenceImage([diag_1, diag_2])
+
+# output
+
+5×5 PersistenceImage(
+  distribution = PersistenceDiagrams.Binormal(1.0),
+  weight = PersistenceDiagrams.DefaultWeightingFunction(1.5)
+)
+```
+```jldoctest
+image(diag_1)
+
+# output
+
+5×5 Array{Float64,2}:
+ 0.266562  0.269891  0.264744  0.251762  0.232227
+ 0.294472  0.297554  0.291244  0.276314  0.254244
+ 0.31342   0.316057  0.308664  0.292136  0.268117
+ 0.32141   0.323446  0.315164  0.297554  0.272373
+ 0.31758   0.318928  0.310047  0.29199   0.266562
+```
 """
-struct PersistenceImage{
-    X<:AbstractVector{Float64}, Y<:AbstractVector{Float64}, D, W
-} <: AbstractDiagramTransformer
+struct PersistenceImage{X<:AbstractVector{Float64}, Y<:AbstractVector{Float64}, D, W}
     ys::Y
     xs::X
     distribution::D
@@ -93,7 +125,7 @@ function PersistenceImage(
 
     return PersistenceImage(ys, xs, distribution, weight)
 end
-function PersistenceImage(ylims::Tuple, xlims::Tuple; size=50, kwargs...)
+function PersistenceImage(ylims::Tuple, xlims::Tuple; size=5, kwargs...)
     s = length(size) == 1 ? (size, size) : size
     ys = range(ylims[1], ylims[2], length=s[1] + 1)
     xs = range(xlims[1], xlims[2], length=s[2] + 1)
@@ -128,18 +160,11 @@ function Base.show(io::IO, ::MIME"text/plain", pi::PersistenceImage)
     print(io, ")")
 end
 
-function destination(pi::PersistenceImage, diagram::PersistenceDiagram)
-    n = length(pi.ys) - 1
-    m = length(pi.xs) - 1
-    return zeros(n, m)
-end
-
-function transform!(dst, pi::PersistenceImage, diagram::PersistenceDiagram)
+function (pi::PersistenceImage)(diagram::PersistenceDiagram)
     diagram = filter(isfinite, diagram)
     n = length(pi.ys) - 1
     m = length(pi.xs) - 1
-    size(dst) ≠ (n, m) && throw(ArgumentError("destination and output sizes don't match"))
-    dst .= 0.0
+    result = zeros(n, m)
 
     @inbounds for i in 1:m, j in 1:n
         for interval in diagram
@@ -156,8 +181,8 @@ function transform!(dst, pi::PersistenceImage, diagram::PersistenceDiagram)
                      pi.distribution(x_hi - b, y_lo - p) * w +
                      pi.distribution(x_hi - b, y_hi - p) * w) / 4
 
-            dst[j, i] += pixel
+            result[j, i] += pixel
         end
     end
-    return dst
+    return result
 end

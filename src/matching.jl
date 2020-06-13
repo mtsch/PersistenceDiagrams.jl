@@ -5,6 +5,35 @@
 # much much simpler.
 # TODO: try it again some time.
 
+abstract type MatchingDistance end
+
+"""
+    weight(::MatchingDistance, left, right)
+    weight(::Matching)
+
+Get the weight of the matching between persistence diagrams `left` and `right`.
+
+# See also
+
+* [`matching`](@ref)
+* [`Bottleneck`](@ref)
+* [`Wasserstein`](@ref)
+"""
+weight(dist::MatchingDistance, left, right) = dist(left, right, matching=false)
+"""
+    matching(::MatchingDistance, left, right)
+    matching(::Matching)
+
+Get the matching between persistence diagrams `left` and `right`.
+
+# See also
+
+* [`matching`](@ref)
+* [`Bottleneck`](@ref)
+* [`Wasserstein`](@ref)
+"""
+matching(dist::MatchingDistance, left, right) = dist(left, right, matching=true)
+
 """
     Matching
 
@@ -12,7 +41,7 @@ A matching between two persistence diagrams.
 
 # Methods
 
-* [`distance(::Matching)`](@ref)
+* [`weight(::Matching)`](@ref)
 * [`matching(::Matching)`](@ref)
 """
 struct Matching
@@ -28,12 +57,7 @@ struct Matching
 end
 
 
-"""
-    distance(::Matching)
-
-Get the weight of a `Matching` object.
-"""
-distance(match::Matching) = match.weight
+weight(match::Matching) = match.weight
 
 Base.length(match::Matching) = length(match.matching)
 Base.isempty(match::Matching) = isempty(match.matching)
@@ -48,13 +72,6 @@ function distance(int1, int2)
     end
 end
 
-"""
-    matching(m::Matching; bottleneck=m.bottleneck)
-
-Get the matching of a `Matching` object represented by a vector of pairs of intervals. If
-`bottleneck` is set to true, only return the edges with length equal to the weight of the
-matching.
-"""
 function matching(match::Matching; bottleneck=match.bottleneck)
     P = PersistenceInterval{Nothing}
     result = Pair{P, P}[]
@@ -212,7 +229,6 @@ function right_neighbors!(buff, graph::BottleneckGraph, vertices)
     return buff
 end
 
-is_exposed_left(graph::BottleneckGraph, l) = graph.match_left[l] == 0
 is_exposed_right(graph::BottleneckGraph, r) = graph.match_right[r] == 0
 exposed_left(graph::BottleneckGraph) = findall(iszero, graph.match_left)
 
@@ -349,44 +365,36 @@ points, as the diagonal points are considered in the matching as well.
 
 # Warning
 
-Computing the bottleneck distance requires ``\\mathcal{O}(n^2)`` space!
+Computing the bottleneck distance requires ``\\mathcal{O}(n^2)`` space. Be careful when
+computing distances between very large diagrams!
 
-# Methods
+# Usage
 
-* [`matching(::Bottleneck, ::Any, ::Any)`](@ref): construct a bottleneck [`Matching`](@ref).
-* [`distance(::Bottleneck, ::Any, ::Any)`](@ref): find the bottleneck distance.
-"""
-struct Bottleneck end
+* `Bottleneck()(left, right[; matching=false])`: find the bottleneck matching (if
+  `matching=true`) or distance (if `matching=false`) between persistence diagrams `left` and
+  `right`
 
-"""
-    matching(::Bottleneck, left, right)
-
-Find the bottleneck matching between persistence diagrams `left` and `right`. Infinite
-intervals are matched to eachother.
+# Example
 
 ```jldoctest
 left = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
 right = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
-matching(Bottleneck(), left, right)
-
-# Example
+Bottleneck()(left, right)
 
 # output
 
-3-element Matching with weight 2.0:
- [1.0, 2.0) => [1.0, 2.0)
- [3.0, 3.0) => [3.0, 4.0)
- [5.0, 8.0) => [5.0, 10.0)
+2.0
 ```
-
-# See also
-
-* [`Bottleneck`](@ref)
-* [`distance`](@ref)
 """
-function matching(::Bottleneck, left, right)
+struct Bottleneck <: MatchingDistance end
+
+function (::Bottleneck)(left, right; matching=false)
     if count(!isfinite, left) ≠ count(!isfinite, right)
-        return Matching(left, right, Inf, Pair{Int, Int}[], true)
+        if matching
+            return Matching(left, right, Inf, Pair{Int, Int}[], true)
+        else
+            return Inf
+        end
     end
 
     graph = BottleneckGraph(left, right)
@@ -410,33 +418,12 @@ function matching(::Bottleneck, left, right)
         match, _ = hopcroft_karp!(graph, edges[hi])
     end
     @assert length(match) == length(left) + length(right)
-    return Matching(left, right, distance, match, true)
+    if matching
+        return Matching(left, right, distance, match, true)
+    else
+        return distance
+    end
 end
-
-"""
-    distance(::Bottleneck, left, right)
-
-Compute the bottleneck distance between persistence diagrams `left` and `right`. Infinite
-intervals are matched to eachother.
-
-# Example
-
-```jldoctest
-left = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
-right = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
-distance(Bottleneck(), left, right)
-
-# output
-
-2.0
-```
-
-# See also
-
-* [`Bottleneck`](@ref)
-* [`matching`](@ref)
-"""
-distance(::Bottleneck, left, right) = matching(Bottleneck(), left, right).weight
 
 """
     Wasserstein(q=1)
@@ -454,79 +441,49 @@ points, as the diagonal points are considered in the matching as well.
 
 # Warning
 
-Computing the Wasserstein distance requires ``\\mathcal{O}(n^2)`` space!
+Computing the Wasserstein distance requires ``\\mathcal{O}(n^2)`` space. Be careful when
+computing distances between very large diagrams!
 
-# Methods
+# Usage
 
-* [`matching(::Wasserstein, ::Any, ::Any)`](@ref): construct a Wasserstein
-  [`Matching`](@ref).
-* [`distance(::Wasserstein, ::Any, ::Any)`](@ref): find the Wasserstein distance.
-"""
-struct Wasserstein
-    q::Float64
-
-    Wasserstein(q=1) = new(Float64(q))
-end
-
-"""
-    matching(::Wasserstein, left, right)
-
-Find the Wasserstein matching between persistence diagrams `left` and `right`. Infinite
-intervals are matched to eachother.
+* `Wasserstein(q=1)(left, right[; matching=false])`: find the Wasserstein matching (if
+  `matching=true`) or distance (if `matching=false`) between persistence diagrams `left` and
+  `right`.
 
 # Example
 
 ```jldoctest
 left = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
 right = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
-matching(Wasserstein(), left, right)
-
-# output
-
-3-element Matching with weight 3.0:
- [1.0, 2.0) => [1.0, 2.0)
- [3.0, 3.0) => [3.0, 4.0)
- [5.0, 8.0) => [5.0, 10.0)
-```
-
-# See also
-
-* [`Wasserstein`](@ref)
-* [`distance`](@ref)
-"""
-function matching(w::Wasserstein, left, right)
-    if count(!isfinite, left) == count(!isfinite, right)
-        adj = adj_matrix(right, left, w.q)
-        match = collect(i => j for (i, j) in enumerate(hungarian(adj)[1]))
-        distance = sum(adj[i, j] for (i, j) in match)^(1 / w.q)
-
-        return Matching(left, right, distance, match, false)
-    else
-        return Matching(left, right, Inf, Pair{Int, Int}[], false)
-    end
-end
-
-"""
-    distance(::Wasserstein, left, right)
-
-Compute the Wasserstein distance between persistence diagrams `left` and `right`. Infinite
-intervals are matched to eachother.
-
-# Example
-
-```jldoctest
-left = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
-right = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
-distance(Wasserstein(), left, right)
+Wasserstein()(left, right)
 
 # output
 
 3.0
 ```
-
-# See also
-
-* [`Wasserstein`](@ref)
-* [`matching`](@ref)
 """
-distance(w::Wasserstein, left, right) = matching(w, left, right).weight
+struct Wasserstein <: MatchingDistance
+    q::Float64
+
+    Wasserstein(q=1) = new(Float64(q))
+end
+
+function (w::Wasserstein)(left, right; matching=false)
+    if count(!isfinite, left) == count(!isfinite, right)
+        adj = adj_matrix(right, left, w.q)
+        match = collect(i => j for (i, j) in enumerate(hungarian(adj)[1]))
+        distance = sum(adj[i, j] for (i, j) in match)^(1 / w.q)
+
+        if matching
+            return Matching(left, right, distance, match, false)
+        else
+            return distance
+        end
+    else
+        if matching
+            return Matching(left, right, Inf, Pair{Int, Int}[], false)
+        else
+            return Inf
+        end
+    end
+end

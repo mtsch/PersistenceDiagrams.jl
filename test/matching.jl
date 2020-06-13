@@ -41,31 +41,31 @@ end
     diag1 = PersistenceDiagram(0, [(1, 2), (5, 8)])
     diag2 = PersistenceDiagram(0, [(1, 2), (3, 4), (5, 10)])
 
-    m = matching(Bottleneck(), diag1, diag2)
+    m = Bottleneck()(diag1, diag2, matching=true)
     @test matching(m) == [(5,8) => (5,10)]
     @test matching(m, bottleneck=false) == [(1,2) => (1,2), (3,3) => (3,4), (5,8) => (5,10)]
-    @test distance(m) ≡ 2.0
-    @test distance(Bottleneck(), diag1, diag2) ≡ 2.0
-    @test distance(Bottleneck(), diag1, diag2) == distance(Bottleneck(), diag2, diag1)
+    @test weight(m) ≡ 2.0
+    @test Bottleneck()(diag1, diag2) ≡ 2.0
+    @test Bottleneck()(diag1, diag2) == weight(matching(Bottleneck(), diag2, diag1))
 
-    @test distance(Bottleneck(), diag1, diag1) ≡ 0.0
+    @test weight(Bottleneck(), diag1, diag1) ≡ 0.0
 end
 
 @testset "Wasserstein basic" begin
     diag1 = PersistenceDiagram(0, [(1, 2), (5, 8)])
     diag2 = PersistenceDiagram(0, [(1, 2), (3, 4), (5, 10)])
 
-    m = matching(Wasserstein(), diag1, diag2)
+    m = Wasserstein()(diag1, diag2, matching=true)
     @test matching(m) == [(1,2) => (1,2), (3,3) => (3,4), (5,8) => (5,10)]
-    @test distance(m) ≡ 3.0
-    @test distance(Wasserstein(), diag1, diag2) ≡ 3.0
-    @test distance(Wasserstein(2), diag1, diag2) ≡ √(1 + 4)
+    @test weight(m) ≡ 3.0
+    @test Wasserstein()(diag1, diag2) ≡ 3.0
+    @test weight(matching(Wasserstein(2), diag1, diag2)) ≡ √(1 + 4)
     for i in 1:3
-        @test distance(Wasserstein(i), diag1, diag2) ≡
-            distance(Wasserstein(i), diag2, diag1)
+        @test Wasserstein(i)(diag1, diag2) ≡
+            Wasserstein(i)(diag2, diag1)
     end
 
-    @test distance(Wasserstein(), diag1, diag1) ≡ 0.0
+    @test weight(Wasserstein(), diag1, diag1) ≡ 0.0
 end
 
 @testset "infinite intervals" begin
@@ -76,11 +76,13 @@ end
     diag5 = PersistenceDiagram(1, [(2, Inf)])
 
     for dist_type in (Bottleneck(), Wasserstein(), Wasserstein(2))
-        @test distance(dist_type, diag1, diag2) ≡ Inf
-        @test distance(dist_type, diag2, diag1) ≡ Inf
-        @test distance(dist_type, diag1, diag1) == 0
-        @test 0 < distance(dist_type, diag1, diag3) < Inf
-        @test distance(dist_type, diag4, diag5) == 1
+        @test dist_type(diag1, diag2) ≡ Inf
+        @test dist_type(diag2, diag1) ≡ Inf
+        @test weight(dist_type(diag1, diag2, matching=true)) ≡ Inf
+        @test isempty(matching(dist_type, diag1, diag2))
+        @test dist_type(diag1, diag1) == 0
+        @test 0 < dist_type(diag1, diag3) < Inf
+        @test dist_type(diag4, diag5) == 1
     end
 end
 
@@ -88,10 +90,10 @@ end
     diag1 = PersistenceDiagram(5, vcat((90, 100), [(i, i+1) for i in 1:100]))
     diag2 = PersistenceDiagram(5, [(100, 110)])
 
-    @test distance(Bottleneck(), diag1, diag2) == 10
-    @test distance(Bottleneck(), diag2, diag1) == 10
-    @test distance(Wasserstein(), diag1, diag2) == 110
-    @test distance(Wasserstein(), diag2, diag1) == 110
-    @test distance(Wasserstein(2), diag1, diag2) == √200
-    @test distance(Wasserstein(2), diag2, diag1) == √200
+    @test Bottleneck()(diag1, diag2) == 10
+    @test Bottleneck()(diag2, diag1) == 10
+    @test Wasserstein()(diag1, diag2) == 110
+    @test Wasserstein()(diag2, diag1) == 110
+    @test Wasserstein(2)(diag1, diag2) == √200
+    @test Wasserstein(2)(diag2, diag1) == √200
 end
