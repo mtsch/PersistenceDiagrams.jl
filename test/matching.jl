@@ -78,6 +78,8 @@ end
     for dist_type in (Bottleneck(), Wasserstein(), Wasserstein(2))
         @test dist_type(diag1, diag2) ≡ Inf
         @test dist_type(diag2, diag1) ≡ Inf
+        @test weight(dist_type(diag1, diag2, matching=true)) ≡ Inf
+        @test isempty(matching(dist_type, diag1, diag2))
         @test dist_type(diag1, diag1) == 0
         @test 0 < dist_type(diag1, diag3) < Inf
         @test dist_type(diag4, diag5) == 1

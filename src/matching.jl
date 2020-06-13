@@ -229,7 +229,6 @@ function right_neighbors!(buff, graph::BottleneckGraph, vertices)
     return buff
 end
 
-is_exposed_left(graph::BottleneckGraph, l) = graph.match_left[l] == 0
 is_exposed_right(graph::BottleneckGraph, r) = graph.match_right[r] == 0
 exposed_left(graph::BottleneckGraph) = findall(iszero, graph.match_left)
 
