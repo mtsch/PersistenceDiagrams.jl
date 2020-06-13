@@ -46,10 +46,6 @@ matching
 weight
 ```
 
-```@docs
-Matching
-```
-
 ## Persistence Diagram Vectorization Methods
 
 ```@docs

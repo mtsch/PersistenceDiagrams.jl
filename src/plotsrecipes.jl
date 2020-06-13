@@ -173,7 +173,9 @@ end
 
         xs = Float64[]
         ys = Float64[]
-        for (l, r) in matching(match, bottleneck=get(plotattributes, :bottleneck, false))
+        for (l, r) in matching(
+            match, bottleneck=get(plotattributes, :bottleneck, match.bottleneck)
+        )
             append!(xs, (birth(l), birth(r), NaN))
             if plotattributes[:persistence]
                 append!(ys, (clamp_persistence(l, inf), clamp_persistence(r, inf), NaN))

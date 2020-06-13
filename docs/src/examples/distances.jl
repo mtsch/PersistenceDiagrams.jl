@@ -80,17 +80,17 @@ plot(plot(result_1, title="cutout_1", markercolor=2, xlim=(0, 2.2), ylim=(0, 2.2
 
 match_bottle = matching(Bottleneck(), result_1, result_2)
 
-#
+# Alternatively, we can call the distance object and add the `matching=true` argument.
 
-match_wasser = matching(Wasserstein(), result_1, result_2)
+match_wasser = Wasserstein()(result_1, result_2, matching=true)
 
 # We can access the distance as follows.
 
-distance(match_bottle)
+weight(match_bottle)
 
 # Or if we don't care about the matching, we can compute the distance directly.
 
-distance(Wasserstein(), result_1, result_2)
+Wasserstein()(result_1, result_2)
 
 # We plot the matchings using the `plot` function.
 

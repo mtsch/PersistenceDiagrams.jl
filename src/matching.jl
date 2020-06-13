@@ -376,6 +376,7 @@ computing distances between very large diagrams!
 
 # Example
 
+```jldoctest
 left = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
 right = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
 Bottleneck()(left, right)
