@@ -1,7 +1,7 @@
 name = "PersistenceDiagrams"
 uuid = "90b4794c-894b-4756-a0f8-5efeb5ddf7ae"
 authors = ["mtsch <matijacufar@gmail.com>"]
-version = "0.3.3"
+version = "0.4.0"
 
 [deps]
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
