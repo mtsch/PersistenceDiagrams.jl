@@ -11,10 +11,10 @@ struct PersistenceInterval{R}
     representative::R
 end
 
-function PersistenceInterval{Nothing}(birth::Real, death::Real)
+function PersistenceInterval{Nothing}(birth, death)
     return PersistenceInterval{Nothing}(Float64(birth), Float64(death), nothing)
 end
-function PersistenceInterval(birth::Real, death::Real, rep::R=nothing) where R
+function PersistenceInterval(birth, death, rep::R=nothing) where R
     return PersistenceInterval{R}(Float64(birth), Float64(death), rep)
 end
 function PersistenceInterval(t::Tuple{<:Any, <:Any}, rep=nothing)
