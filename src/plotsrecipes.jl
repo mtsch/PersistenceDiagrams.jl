@@ -7,10 +7,10 @@ function dim_str(diag)
     sub_digits = ("₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉")
     return join(reverse(sub_digits[digits(dim(diag)) .+ 1]))
 end
-function clamp_death(int::PersistenceInterval, t_max)
+function clamp_death(int::AbstractInterval, t_max)
     return isfinite(int) ? death(int) : t_max
 end
-function clamp_persistence(int::PersistenceInterval, t_max)
+function clamp_persistence(int::AbstractInterval, t_max)
     return isfinite(int) ? persistence(int) : t_max
 end
 
@@ -51,7 +51,7 @@ struct ZeroPersistenceLine end
     end
 end
 
-@recipe function f(::Type{D}, diag::D) where D<:AbstractArray{<:PersistenceInterval}
+@recipe function f(::Type{D}, diag::D) where D<:AbstractArray{<:AbstractInterval}
     if plotattributes[:letter] == :x
         return birth.(diag)
     elseif get(plotattributes, :persistence, false)

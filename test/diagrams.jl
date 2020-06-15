@@ -12,12 +12,8 @@ using PersistenceDiagrams: stripped
         @test d == death(int1) == 2
         @test persistence(int1) == 1
         @test int1 == (1, 2)
-        @test convert(
-            PersistenceInterval{Nothing}, (1, 2)
-        ) ≡ PersistenceInterval(1, 2)
-        @test convert(
-            PersistenceInterval{Nothing}, (1, Inf)
-        ) ≡ PersistenceInterval(1, Inf)
+        @test convert(PersistenceInterval, (1, 2)) ≡ PersistenceInterval(1, 2)
+        @test convert(PersistenceInterval, (1, Inf)) ≡ PersistenceInterval(1, Inf)
         @test_throws BoundsError int1[0]
         @test int1[1] == 1
         @test int1[2] == 2
@@ -43,15 +39,14 @@ using PersistenceDiagrams: stripped
         @test int1 < int2
         @test int1 < PersistenceInterval(2, 2)
 
-        @test_throws ErrorException representative(int1)
+        @test_throws MethodError representative(int1)
 
         @test sprint(print, int1) == "[1.0, 2.0)"
         @test sprint(print, int2) == "[1.0, ∞)"
-        @test sprint((io, val) -> show(io, MIME"text/plain"(), val), int1) ==
-            "PersistenceInterval(1.0, 2.0)"
+        @test sprint((io, val) -> show(io, MIME"text/plain"(), val), int1) == "[1.0, 2.0)"
     end
     @testset "with representative" begin
-        int1 = PersistenceInterval(2.0, 3.0, [1, 2, 3, 4])
+        int1 = RepresentativeInterval(2.0, 3.0, :a, :b, [1, 2, 3, 4])
         @test eltype(int1) == Float64
         b, d = int1
         @test b == birth(int1) == 2.0
@@ -63,7 +58,7 @@ using PersistenceDiagrams: stripped
         @test int1[2] == 3.0
         @test_throws BoundsError int1[3]
 
-        int2 = PersistenceInterval(1.0, Inf, [1, 2])
+        int2 = RepresentativeInterval(1.0, Inf, 1, 2, [1, 2])
         @test eltype(int2) == Float64
         b, d = int2
         @test b == birth(int2) == 1.0
@@ -71,24 +66,23 @@ using PersistenceDiagrams: stripped
         @test persistence(int2) == Inf
 
         @test int1 > int2
-        @test int1 > PersistenceInterval(2.0, 2.0, [1, 2])
+        @test int1 > PersistenceInterval(2.0, 2.0)
 
         @test representative(int1) == [1, 2, 3, 4]
         @test representative(int2) == [1, 2]
+        @test birth_simplex(int1) == :a
+        @test death_simplex(int1) == :b
+        @test birth_simplex(int2) == 1
+        @test death_simplex(int2) == 2
+
         @test tuple(stripped(int1)...) == tuple(int1...)
         @test stripped(int1) ≢ int1
-        @test stripped(int1) isa PersistenceInterval{Nothing}
+        @test stripped(int1) isa PersistenceInterval
 
-        @test sprint(print, int1) == "[2.0, 3.0)"
-        @test sprint(print, int2) == "[1.0, ∞)"
+        @test sprint(print, int1) == "[2.0, 3.0): [1, 2, 3, 4]"
+        @test sprint(print, int2) == "[1.0, ∞): [1, 2]"
         @test sprint((io, val) -> show(io, MIME"text/plain"(), val), int1) ==
-            """
-                PersistenceInterval(2.0, 3.0) with representative:
-                4-element Array{Int64,1}:
-                 1
-                 2
-                 3
-                 4"""
+            "[2.0, 3.0): [1, 2, 3, 4]"
     end
 end
 
