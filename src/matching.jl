@@ -45,8 +45,8 @@ A matching between two persistence diagrams.
 * [`matching(::Matching)`](@ref)
 """
 struct Matching
-    left::PersistenceDiagram{PersistenceInterval{Nothing}}
-    right::PersistenceDiagram{PersistenceInterval{Nothing}}
+    left::PersistenceDiagram{PersistenceInterval}
+    right::PersistenceDiagram{PersistenceInterval}
     weight::Float64
     matching::Vector{Pair{Int, Int}}
     bottleneck::Bool
@@ -73,8 +73,7 @@ function distance(int1, int2)
 end
 
 function matching(match::Matching; bottleneck=match.bottleneck)
-    P = PersistenceInterval{Nothing}
-    result = Pair{P, P}[]
+    result = Pair{PersistenceInterval, PersistenceInterval}[]
     n = length(match.left)
     m = length(match.right)
     for (i, j) in match.matching
@@ -83,11 +82,11 @@ function matching(match::Matching; bottleneck=match.bottleneck)
         elseif i ≤ n
             # left is matched to diagonal
             l = match.left[i]
-            push!(result, match.left[i] => P(birth(l), birth(l)))
+            push!(result, match.left[i] => PersistenceInterval(birth(l), birth(l)))
         elseif j ≤ m
             # right is matched to diagonal
             r = match.right[j]
-            push!(result, P(birth(r), birth(r)) => r)
+            push!(result, PersistenceInterval(birth(r), birth(r)) => r)
         end
     end
     sort!(result)

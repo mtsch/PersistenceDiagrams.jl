@@ -1,18 +1,6 @@
 @info "build started."
 using Documenter
-using Literate
 using PersistenceDiagrams
-using Plots
-gr()
-ENV["GKSwstype"] = "100"
-
-EXAMPLES_INPUT = joinpath(@__DIR__, "src/examples")
-EXAMPLES_OUTPUT = joinpath(@__DIR__, "src/generated")
-
-for example in readdir(EXAMPLES_INPUT, join=true)
-    endswith(example, ".jl") || continue
-    Literate.markdown(example, EXAMPLES_OUTPUT, documenter=true)
-end
 
 makedocs(sitename="PersistenceDiagrams.jl",
          format = Documenter.HTML(
@@ -22,10 +10,6 @@ makedocs(sitename="PersistenceDiagrams.jl",
          ),
          pages=[
              "Home" => "index.md",
-             "Examples" => [
-                 "Basics" => "generated/basics.md",
-                 "Bottleneck and Wasserstein Distance" => "generated/distances.md",
-             ],
              "API" => "api/diagrams.md",
          ])
 

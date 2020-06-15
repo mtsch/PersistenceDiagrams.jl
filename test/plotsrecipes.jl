@@ -80,8 +80,9 @@ end
     end
     @testset "diagram plot" begin
         diag1 = PersistenceDiagram(0, [(3, Inf), (1, 2), (3, 4)])
-        diag2 = PersistenceDiagram(1, [(1, 2), (3, 4)])
-        diag3 = PersistenceDiagram(1, PersistenceInterval{Nothing}[])
+        diag2 = PersistenceDiagram(1, [RepresentativeInterval(1, 2, :a, :b, [1, 2, 3]),
+                                       RepresentativeInterval(3, 4, :b, :c, [1, 0])])
+        diag3 = PersistenceDiagram(1, PersistenceInterval[])
 
         @test n_series((diag1,)) == 1 + 1 + 1
         @test n_series((diag1,), infinity=5) == 1 + 1 + 1
@@ -101,8 +102,9 @@ end
     end
     @testset "barcode plot" begin
         diag1 = PersistenceDiagram(0, [(3, Inf), (1, 2), (3, 4)])
-        diag2 = PersistenceDiagram(1, [(1, 2), (3, 4)])
-        diag3 = PersistenceDiagram(1, PersistenceInterval{Nothing}[])
+        diag2 = PersistenceDiagram(1, [RepresentativeInterval(1, 2, :a, :b, [1, 2, 3]),
+                                       RepresentativeInterval(3, 4, :b, :c, [1, 0])])
+        diag3 = PersistenceDiagram(1, PersistenceInterval[])
 
         @test n_series(Barcode(diag1)) == 1 + 1
         @test n_series(Barcode((diag1,)), infinity=5) == 1 + 1
