@@ -5,19 +5,31 @@ PersistenceInterval
 ```
 
 ```@docs
-birth(::PersistenceInterval)
+birth
 ```
 
 ```@docs
-death(::PersistenceInterval)
+death
 ```
 
 ```@docs
-persistence(::PersistenceInterval)
+persistence
 ```
 
 ```@docs
-representative(::PersistenceInterval)
+RepresentativeInterval
+```
+
+```@docs
+representative
+```
+
+```@docs
+birth_simplex
+```
+
+```@docs
+death_simplex
 ```
 
 ```@docs

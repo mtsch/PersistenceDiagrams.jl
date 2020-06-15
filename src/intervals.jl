@@ -63,8 +63,8 @@ end
 """
     PersistenceInterval{T<:AbstractFloat, C}
 
-The type that represents a persistence interval. It behaves exactly like a
-`Tuple{T, T}`, but may have a representative cocycle attached to it.
+The type that represents a persistence interval. It behaves exactly like a `Tuple{Float64,
+Float64}`.
 """
 struct PersistenceInterval <: AbstractInterval
     birth::Float64
@@ -90,6 +90,11 @@ function Base.show(io::IO, int::PersistenceInterval)
     print(io, "[$b, $d)")
 end
 
+"""
+    RepresentativeInterval{P<:AbstractInterval, B, D, R} <: AbstractInterval
+
+A persistence interval with a representative (co)cycles and critical simplices attached.
+"""
 struct RepresentativeInterval{P<:AbstractInterval, B, D, R} <: AbstractInterval
     # This is done to allow e.g. adding a representative to an interval with an error bar
     # with minimal fuss.
