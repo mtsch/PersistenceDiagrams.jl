@@ -83,18 +83,17 @@ using PersistenceDiagrams: stripped
         @test stripped(int1) isa PersistenceInterval
 
         @test sprint(print, int1) == "[2.0, 3.0) with 4-element representative"
-        @test sprint(print, int2) == "[1.0, ∞): with 2-element representative"
+        @test sprint(print, int2) == "[1.0, ∞) with 2-element representative"
         @test sprint((io, val) -> show(io, MIME"text/plain"(), val), int1) ==
             """
             [2.0, 3.0)
              birth_simplex: a
              death_simplex: b
-             representative: 4-element Array{Int64, 1}:
+             representative: 4-element Array{Int64,1}:
              1
              2
              3
-             4
-            """
+             4"""
     end
 end
 
