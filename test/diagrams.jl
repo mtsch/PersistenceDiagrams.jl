@@ -12,6 +12,7 @@ using PersistenceDiagrams: stripped
         @test d == death(int1) == 2
         @test persistence(int1) == 1
         @test int1 == (1, 2)
+        @test (1, 2) == int1
         @test convert(PersistenceInterval, (1, 2)) ≡ PersistenceInterval(1, 2)
         @test convert(PersistenceInterval, (1, Inf)) ≡ PersistenceInterval(1, Inf)
         @test_throws BoundsError int1[0]
@@ -57,6 +58,7 @@ using PersistenceDiagrams: stripped
         @test int1[1] == 2.0
         @test int1[2] == 3.0
         @test_throws BoundsError int1[3]
+        @test int1 == RepresentativeInterval(2.0, 3.0, :a, :b, [])
 
         int2 = RepresentativeInterval(1.0, Inf, 1, 2, [1, 2])
         @test eltype(int2) == Float64
@@ -76,13 +78,23 @@ using PersistenceDiagrams: stripped
         @test death_simplex(int2) == 2
 
         @test tuple(stripped(int1)...) == tuple(int1...)
+        @test stripped(int1) == int1
         @test stripped(int1) ≢ int1
         @test stripped(int1) isa PersistenceInterval
 
-        @test sprint(print, int1) == "[2.0, 3.0): [1, 2, 3, 4]"
-        @test sprint(print, int2) == "[1.0, ∞): [1, 2]"
+        @test sprint(print, int1) == "[2.0, 3.0) with 4-element representative"
+        @test sprint(print, int2) == "[1.0, ∞): with 2-element representative"
         @test sprint((io, val) -> show(io, MIME"text/plain"(), val), int1) ==
-            "[2.0, 3.0): [1, 2, 3, 4]"
+            """
+            [2.0, 3.0)
+             birth_simplex: a
+             death_simplex: b
+             representative: 4-element Array{Int64, 1}:
+             1
+             2
+             3
+             4
+            """
     end
 end
 

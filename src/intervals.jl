@@ -49,7 +49,11 @@ end
 Base.firstindex(int::AbstractInterval) = 1
 Base.lastindex(int::AbstractInterval) = 2
 
+function Base.:(==)(int1::AbstractInterval, int2::AbstractInterval)
+    birth(int1) == birth(int2) && death(int1) == death(int2)
+end
 Base.:(==)(int::AbstractInterval, (b, d)::Tuple) = birth(int) == b && death(int) == d
+Base.:(==)((b, d)::Tuple, int::AbstractInterval) = birth(int) == b && death(int) == d
 
 function Base.isless(int1::AbstractInterval, int2::AbstractInterval)
     if birth(int1) ≠ birth(int2)
@@ -114,7 +118,15 @@ birth(int::RepresentativeInterval) = birth(int.interval)
 death(int::RepresentativeInterval) = death(int.interval)
 
 function Base.show(io::IO, int::RepresentativeInterval)
-    print(io, int.interval, ": ", int.representative)
+    print(io, int.interval)
+    print(io, " with ", length(representative(int)), "-element representative")
+end
+function Base.show(io::IO, ::MIME"text/plain", int::RepresentativeInterval)
+    println(io, int.interval)
+    println(io, " birth_simplex: ", int.birth_simplex)
+    println(io, " death_simplex: ", int.death_simplex)
+    print(io, " representative: ")
+    show(io, MIME"text/plain"(), representative(int))
 end
 
 """
