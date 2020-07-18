@@ -84,12 +84,17 @@ using PersistenceDiagrams: stripped
 
         @test sprint(print, int1) == "[2.0, 3.0) with 4-element representative"
         @test sprint(print, int2) == "[1.0, ∞) with 2-element representative"
+        if VERSION ≥ v"1.6.0-DEV"
+            vec_str = "Vector{Int64}"
+        else
+            vec_str = "Array{Int64,1}"
+        end
         @test sprint((io, val) -> show(io, MIME"text/plain"(), val), int1) ==
             """
             [2.0, 3.0)
              birth_simplex: a
              death_simplex: b
-             representative: 4-element Array{Int64,1}:
+             representative: 4-element $vec_str:
              1
              2
              3
