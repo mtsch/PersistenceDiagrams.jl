@@ -12,7 +12,7 @@ export
     RepresentativeInterval, representative, birth_simplex, death_simplex,
     PersistenceDiagram, dim, threshold,
     Bottleneck, Wasserstein, weight, matching,
-    PersistenceImage, BettiCurve,
+    PersistenceImage, PersistenceCurve, BettiCurve, Landscape, Silhuette,
     barcode
 
 using Compat
@@ -24,7 +24,7 @@ include("intervals.jl")
 include("diagrams.jl")
 
 include("matching.jl")
-include("betticurves.jl")
+include("persistencecurves.jl")
 include("persistenceimages.jl")
 
 include("plotsrecipes.jl")
