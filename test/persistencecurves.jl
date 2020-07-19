@@ -25,6 +25,11 @@ using PersistenceDiagrams
             i1, i2 = curve[1:2]
             @test i2 - i1 ≈ Float64(curve.step)
         end
+        @testset "show" begin
+            @test sprint(show, curve) ==
+                "PersistenceCurve(identity, sum, $(Float64(start)), $(Float64(stop)); " *
+                "length=$len, normalize=false, integrate=true)"
+        end
     end
 
     @testset "ranges are selected correctly when learning parameters" begin
