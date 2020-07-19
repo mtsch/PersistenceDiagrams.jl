@@ -3,6 +3,7 @@ using PersistenceDiagrams: Barcode, InfinityLine, ZeroPersistenceLine
 using PersistenceDiagrams: dim_str, clamp_death, clamp_persistence, limits, set_default!
 
 using Compat
+using Test
 
 using RecipesBase
 using RecipesBase: apply_recipe

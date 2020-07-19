@@ -1,4 +1,5 @@
 using PersistenceDiagrams
+using Test
 
 @testset "constructor" begin
     pi_1 = PersistenceImage((0, 2), (0, 3), size=(10, 15))

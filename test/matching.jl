@@ -1,4 +1,6 @@
 using PersistenceDiagrams
+using Test
+
 using PersistenceDiagrams: adj_matrix,
     BottleneckGraph, depth_layers, augmenting_paths, augment!, hopcroft_karp!
 
