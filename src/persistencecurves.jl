@@ -14,10 +14,10 @@ persistence diagram to a vector of floats.
 
 # Constructors
 
-* `PersistenceCurve(fun, stat, start, stop; length=10, integrate=true)`: `length` buckets
-  with the first strating on `t_start` and the last ending on `t_end`.
-* `PersistenceCurve(fun, stat, diagrams; length=10, integreate=true)`: learn the `start` and
-  `stop` parameters from a collection of persistence diagrams.
+* `PersistenceCurve(fun, stat, start, stop; length=10, integrate=true, normalize=false)`:
+  `length` buckets with the first strating on `t_start` and the last ending on `t_end`.
+* `PersistenceCurve(fun, stat, diagrams; length=10, integreate=true, normalize=false)`:
+  learn the `start` and `stop` parameters from a collection of persistence diagrams.
 
 ## Keyword arguments
 
