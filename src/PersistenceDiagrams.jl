@@ -11,9 +11,12 @@ export
     PersistenceInterval, birth, death, persistence,
     RepresentativeInterval, representative, birth_simplex, death_simplex,
     PersistenceDiagram, dim, threshold,
+
     Bottleneck, Wasserstein, weight, matching,
+
     PersistenceImage, PersistenceCurve, BettiCurve, Landscape, Silhuette, Life, Midlife,
     LifeEntropy, MidlifeEntropy, PDThresholding,
+
     barcode
 
 using Compat

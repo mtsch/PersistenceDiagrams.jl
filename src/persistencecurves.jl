@@ -61,14 +61,14 @@ curve(diagram)
 The following are equivalent to `PersistenceCurve` with appropriately selected `fun` and
 `stat` arguments.
 
-* [BettiCurve](@ref)
-* [Landscape](@ref)
-* [Silhuette](@ref)
-* [Life](@ref)
-* [Midlife](@ref)
-* [LifeEntropy](@ref)
-* [MidlifeEntropy](@ref)
-* [PDThresholding](@ref)
+* [`BettiCurve`](@ref)
+* [`Landscape`](@ref)
+* [`Silhuette`](@ref)
+* [`Life`](@ref)
+* [`Midlife`](@ref)
+* [`LifeEntropy`](@ref)
+* [`MidlifeEntropy`](@ref)
+* [`PDThresholding`](@ref)
 
 More options listed in Table 1 on page 9 of reference.
 
@@ -217,7 +217,7 @@ they support infinite intervals.
 
 # See also
 
-    [PersistenceCurve](@ref)
+[`PersistenceCurve`](@ref)
 """
 function BettiCurve(args...; kwargs...)
     return PersistenceCurve(always_one, sum, args...; kwargs...)
@@ -234,7 +234,7 @@ The `k`-th persistence landscape.
 
 # See also
 
-    [PersistenceCurve](@ref)
+[`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -261,11 +261,8 @@ The sum of persistence landscapes for all values of `k`.
 
 # See also
 
-    [PersistenceCurve](@ref)
-
-# See also
-
-[Landscape](@ref)
+[`PersistenceCurve`](@ref)
+[`Landscape`](@ref)
 """
 function Silhuette(args...; kwargs...)
     return PersistenceCurve(landscape, sum, args...; kwargs...)
@@ -281,7 +278,7 @@ The life curve.
 
 # See also
 
-    [PersistenceCurve](@ref)
+[`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -303,7 +300,7 @@ The midlife curve.
 
 # See also
 
-    [PersistenceCurve](@ref)
+[`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -328,7 +325,7 @@ The life entropy curve.
 
 # See also
 
-    [PersistenceCurve](@ref)
+[`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -357,7 +354,7 @@ The midlife entropy curve.
 
 # See also
 
-    [PersistenceCurve](@ref)
+[`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -382,7 +379,7 @@ The persistence diagram thresholding function.
 
 # See also
 
-    [PersistenceCurve](@ref)
+[`PersistenceCurve`](@ref)
 
 # Reference
 
