@@ -4,6 +4,7 @@ using PersistenceDiagrams
 @testset "Construction" begin
     for (start, stop) in ((0, 2), (ℯ, π)), len in (2, 13, 1001)
         curve = PersistenceCurve(identity, sum, start, stop, length=len)
+
         @testset "moving from `start` to `stop` by `step` yields `len` steps" begin
             t = curve.start
             count = 0
@@ -13,6 +14,7 @@ using PersistenceDiagrams
             end
             @test count == len
         end
+
         @testset "indexing" begin
             @test curve[firstindex(curve)] == Float64(curve.start + curve.step/2)
             @test curve[end] == Float64(curve.stop - curve.step/2)
@@ -25,6 +27,7 @@ using PersistenceDiagrams
             i1, i2 = curve[1:2]
             @test i2 - i1 ≈ Float64(curve.step)
         end
+
         @testset "show" begin
             @test sprint(show, curve) ==
                 "PersistenceCurve(identity, sum, $(Float64(start)), $(Float64(stop)); " *
@@ -167,6 +170,7 @@ end
         (1.0, π),
         (√5, ℯ),
     ])
+
     for constructor in (BettiCurve, Life, Midlife, LifeEntropy, MidlifeEntropy)
         @testset "$(nameof(constructor))" begin
             curve_reg = constructor([diagram])

@@ -19,7 +19,7 @@ persistence diagram to a vector of floats.
 * `PersistenceCurve(fun, stat, diagrams; length=10, integreate=true)`: learn the `start` and
   `stop` parameters from a collection of persistence diagrams.
 
-# Keyword arguments
+## Keyword arguments
 
 * `length`: the length of the output. Defaults to 10.
 * `fun`: the function applied to each interval. Must have the following signature.
@@ -27,7 +27,8 @@ persistence diagram to a vector of floats.
 * `stat`: the summary function applied the results of `fun`. Must have the following
   signature. `stat(::Vector{T})::Float64`
 * `normalize`: if set to `true`, normalize the result. Does not work for time-dependent
-  `fun`s. Defaults to `false`.
+  `fun`s. Defaults to `false`. Normalization is performed by dividing all values by
+  `stat(fun.(diag))`.
 * `integrate`: if set to `true`, the amount of overlap between an interval and a bucket is
   considered. This prevents missing very small bars, but does not work correctly for curves
   with time-dependent `fun`s where `stat` is a selection function (such as landscapes). If
@@ -39,7 +40,26 @@ persistence diagram to a vector of floats.
 
 Transforms a diagram. `normalize` and `integrate` override defaults set in constructor.
 
+# Example
+
+```jldoctest
+diagram = PersistenceDiagram(0, [(0, 1), (0.5, 1), (0.5, 0.6), (1, 1.5), (0.5, Inf)])
+curve = BettiCurve(0, 2, length = 4)
+curve(diagram)
+
+# output
+
+4-element Array{Float64,1}:
+ 1.0
+ 3.2
+ 2.0
+ 1.0
+```
+
 # See Also
+
+The following are equivalent to `PersistenceCurve` with appropriately selected `fun` and
+`stat` arguments.
 
 * [BettiCurve](@ref)
 * [Landscape](@ref)
@@ -50,7 +70,7 @@ Transforms a diagram. `normalize` and `integrate` override defaults set in const
 * [MidlifeEntropy](@ref)
 * [PDThresholding](@ref)
 
-More options listed in Table 1 in reference.
+More options listed in Table 1 on page 9 of reference.
 
 # Reference
 
@@ -116,6 +136,7 @@ end
 function Base.getindex(bc::PersistenceCurve, is)
     return [bc[i] for i in is]
 end
+
 function Base.iterate(bc::PersistenceCurve, i=1)
     if i ≤ length(bc)
         return bc[i], i + 1
@@ -194,21 +215,9 @@ they support infinite intervals.
     fun(_, _, _) = 1.0
     stat = sum
 
-# Example
+# See also
 
-```jldoctest
-diagram = PersistenceDiagram(0, [(0, 1), (0.5, 1), (0.5, 0.6), (1, 1.5), (0.5, Inf)])
-curve = BettiCurve(0, 2, length = 4)
-curve(diagram)
-
-# output
-
-4-element Array{Float64,1}:
- 1.0
- 3.2
- 2.0
- 1.0
-```
+    [PersistenceCurve](@ref)
 """
 function BettiCurve(args...; kwargs...)
     return PersistenceCurve(always_one, sum, args...; kwargs...)
@@ -223,6 +232,10 @@ The `k`-th persistence landscape.
     fun((b, d), _, t) = max(min(t - b, d - t), 0)
     stat = get(sort(values, rev=true), k, 0.0)
 
+# See also
+
+    [PersistenceCurve](@ref)
+
 # Reference
 
 Bubenik, P. (2015). Statistical topological data analysis using persistence landscapes. [The
@@ -230,9 +243,9 @@ Journal of Machine Learning Research, 16(1),
 77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
 """
 function Landscape(k, args...; kwargs...)
-    return PersistenceCurve(landscape_fun, k_max(k), args...; integrate=false, kwargs...)
+    return PersistenceCurve(landscape, k_max(k), args...; integrate=false, kwargs...)
 end
-landscape_fun((b, d), _, t) = max(min(t - b, d - t), 0)
+landscape((b, d), _, t) = max(min(t - b, d - t), 0)
 struct k_max
     k::Int
 end
@@ -248,10 +261,14 @@ The sum of persistence landscapes for all values of `k`.
 
 # See also
 
+    [PersistenceCurve](@ref)
+
+# See also
+
 [Landscape](@ref)
 """
 function Silhuette(args...; kwargs...)
-    return PersistenceCurve(landscape_fun, sum, args...; kwargs...)
+    return PersistenceCurve(landscape, sum, args...; kwargs...)
 end
 
 """
@@ -261,6 +278,10 @@ The life curve.
 
     fun((b, d), _, _) = d - b
     stat = sum
+
+# See also
+
+    [PersistenceCurve](@ref)
 
 # Reference
 
@@ -279,6 +300,10 @@ The midlife curve.
 
     fun((b, d), _, _) = (b + d) / 2
     stat = sum
+
+# See also
+
+    [PersistenceCurve](@ref)
 
 # Reference
 
@@ -300,6 +325,10 @@ The life entropy curve.
         -x * log2(x)
     end
     stat = sum
+
+# See also
+
+    [PersistenceCurve](@ref)
 
 # Reference
 
@@ -326,6 +355,10 @@ The midlife entropy curve.
     end
     stat = sum
 
+# See also
+
+    [PersistenceCurve](@ref)
+
 # Reference
 
 Chung, Y. M., & Lawson, A. (2019). Persistence curves: A canonical framework for summarizing
@@ -346,6 +379,10 @@ The persistence diagram thresholding function.
 
     fun((b, d), _, t) = (d - t) * (t - b)
     stat = mean
+
+# See also
+
+    [PersistenceCurve](@ref)
 
 # Reference
 
