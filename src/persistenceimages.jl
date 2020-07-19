@@ -88,6 +88,13 @@ image(diag_1)
  0.32141   0.323446  0.315164  0.297554  0.272373
  0.31758   0.318928  0.310047  0.29199   0.266562
 ```
+
+# Reference
+
+Adams, H., Emerson, T., Kirby, M., Neville, R., Peterson, C., Shipman, P., ... &
+Ziegelmeier, L. (2017). Persistence images: A stable vector representation of persistent
+homology. [The Journal of Machine Learning Research, 18(1), 218-252]
+(http://www.jmlr.org/papers/volume18/16-337/16-337.pdf).
 """
 struct PersistenceImage{X<:AbstractVector{Float64}, Y<:AbstractVector{Float64}, D, W}
     ys::Y
