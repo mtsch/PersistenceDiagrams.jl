@@ -19,25 +19,36 @@ persistence diagram to a vector of floats.
 * `PersistenceCurve(fun, stat, diagrams; length=10, integreate=true)`: learn the `start` and
   `stop` parameters from a collection of persistence diagrams.
 
-`fun` and `stat` must have the following signatures:
+# Keyword arguments
 
-* `fun(::AbstractPersistenceInterval, ::PersistenceDiagram, time::Float64)::T`
-* `stat(::Vector{T})::Float64`
+* `length`: the length of the output. Defaults to 10.
+* `fun`: the function applied to each interval. Must have the following signature.
+  `fun(::AbstractPersistenceInterval, ::PersistenceDiagram, time)::T`
+* `stat`: the summary function applied the results of `fun`. Must have the following
+  signature. `stat(::Vector{T})::Float64`
+* `normalize`: if set to `true`, normalize the result. Does not work for time-dependent
+  `fun`s. Defaults to `false`.
+* `integrate`: if set to `true`, the amount of overlap between an interval and a bucket is
+  considered. This prevents missing very small bars, but does not work correctly for curves
+  with time-dependent `fun`s where `stat` is a selection function (such as landscapes). If
+  set to `false`, the curve is simply sampled at midpoints of buckets. Defaults to `true`.
 
-Use `integrate=true` when `stat` for a fixed collection of intervals is monotonous with
-respect to time. For exaple, this is not the case for persistence landscapes.
+# Call
+
+    (::PersistenceCurve)(diagram; normalize, integrate)
+
+Transforms a diagram. `normalize` and `integrate` override defaults set in constructor.
 
 # See Also
 
 * [BettiCurve](@ref)
-* [LifeEntropy](@ref)
-* [DiagramThresholding](@ref)
 * [Landscape](@ref)
 * [Silhuette](@ref)
 * [Life](@ref)
-* [NormLife](@ref)
 * [Midlife](@ref)
-* [NormMidlife](@ref)
+* [LifeEntropy](@ref)
+* [MidlifeEntropy](@ref)
+* [PDThresholding](@ref)
 
 More options listed in Table 1 in reference.
 
@@ -50,20 +61,23 @@ struct PersistenceCurve{F, S}
     fun::F
     stat::S
     integrate::Bool
+    normalize::Bool
     start::Float64
     stop::Float64
     step::Base.TwicePrecision{Float64}
     length::Int
 
-    function PersistenceCurve(fun, stat, start, stop; length=10, integrate=true)
+    function PersistenceCurve(
+        fun, stat, start, stop; length=10, integrate=true, normalize=false
+    )
         step = range(start, stop, length=length + 1).step
         return new{typeof(fun), typeof(stat)}(
-            fun, stat, integrate, start, stop, step, length
+            fun, stat, integrate, normalize, start, stop, step, length
         )
     end
 end
 
-function PersistenceCurve(fun, stat, diagrams; length=10, integrate=true)
+function PersistenceCurve(fun, stat, diagrams; length=10, integrate=true, normalize=false)
     t_min = minimum(birth(int) for int in Iterators.flatten(diagrams))
     t_max = maximum(death(int) for int in Iterators.flatten(diagrams) if isfinite(int))
 
@@ -75,7 +89,20 @@ function PersistenceCurve(fun, stat, diagrams; length=10, integrate=true)
         t_max += (t_max - t_min) / (length - 1)
     end
 
-    return PersistenceCurve(fun, stat, t_min, t_max; length=length, integrate=integrate)
+    return PersistenceCurve(
+        fun, stat, t_min, t_max; length=length, integrate=integrate, normalize=normalize
+    )
+end
+
+function Base.show(io::IO, curve::PersistenceCurve)
+    fname = nameof(curve.fun)
+    sname = nameof(curve.stat)
+    print(io, "PersistenceCurve(",
+          join((fname, sname, string(curve.start), string(curve.stop)), ", "),
+          "; length=", curve.length,
+          ", normalize=", curve.normalize,
+          ", integrate=", curve.integrate,
+          ")")
 end
 
 Base.firstindex(bc::PersistenceCurve) = 1
@@ -88,6 +115,13 @@ function Base.getindex(bc::PersistenceCurve, i::Integer)
 end
 function Base.getindex(bc::PersistenceCurve, is)
     return [bc[i] for i in is]
+end
+function Base.iterate(bc::PersistenceCurve, i=1)
+    if i ≤ length(bc)
+        return bc[i], i + 1
+    else
+        return nothing
+    end
 end
 
 function _value_at!(buff, f, s, diag, t)
@@ -109,8 +143,16 @@ function _value_at!(buff, f, s, diag, t)
     end
 end
 
-function (curve::PersistenceCurve)(diag; integrate=curve.integrate)
-    integrate ? _integrate(curve, diag) : _sample(curve, diag)
+function (curve::PersistenceCurve)(
+    diag; integrate=curve.integrate, normalize=curve.normalize
+)
+    result = integrate ? _integrate(curve, diag) : _sample(curve, diag)
+    if normalize
+        norm = curve.stat(curve.fun(int, diag, nothing) for int in diag)
+        return result ./ norm
+    else
+        return result
+    end
 end
 
 function _sample(curve, diag)
@@ -149,7 +191,8 @@ end
 Betti curves count the Betti numbers at each time step. Unlike most vectorization methods,
 they support infinite intervals.
 
-Equivalent to [PersistenceCurve](@ref) with `fun = _ -> 1` and `stat = sum`.
+    fun(_, _, _) = 1.0
+    stat = sum
 
 # Example
 
@@ -170,33 +213,26 @@ curve(diagram)
 function BettiCurve(args...; kwargs...)
     return PersistenceCurve(always_one, sum, args...; kwargs...)
 end
-
 always_one(_...) = 1.0
 
 """
     Landscape(k, args...)
 
-The k-th persistence landscape.
+The `k`-th persistence landscape.
 
-Equivalent to [PersistenceCurve](@ref) with `fun = ((b, d), _, t) -> min(t - b, d - t)` and
-`stat = k_max`.
+    fun((b, d), _, t) = max(min(t - b, d - t), 0)
+    stat = get(sort(values, rev=true), k, 0.0)
 
 # Reference
 
 Bubenik, P. (2015). Statistical topological data analysis using persistence landscapes. [The
 Journal of Machine Learning Research, 16(1),
 77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
-
-# Example
-
-```jldoctest
-```
 """
 function Landscape(k, args...; kwargs...)
     return PersistenceCurve(landscape_fun, k_max(k), args...; integrate=false, kwargs...)
 end
-
-landscape_fun(int, _, t) = max(min(t - birth(int), death(int) - t), 0)
+landscape_fun((b, d), _, t) = max(min(t - b, d - t), 0)
 struct k_max
     k::Int
 end
@@ -207,8 +243,8 @@ end
 
 The sum of persistence landscapes for all values of `k`.
 
-Equivalent to [PersistenceCurve](@ref) with `fun = ((b, d), _, t) -> min(t - b, d - t)` and
-`stat = sum`.
+    fun((b, d), _, t) = max(min(t - b, d - t), 0)
+    stat = sum
 
 # See also
 
@@ -218,14 +254,105 @@ function Silhuette(args...; kwargs...)
     return PersistenceCurve(landscape_fun, sum, args...; kwargs...)
 end
 
-# TODO:
-# LifeEntropy
-# Atienza, N., González-Díaz, R., & Soriano-Trigueros, M. (2018). On the stability of persistent entropy and new summary functions for TDA. [arXiv preprint arXiv:1803.08304](https://arxiv.org/abs/1803.08304).
+"""
+    Life
 
-# DiagramThresholding
-# Chung, Y. M., & Day, S. (2018). Topological fidelity and image thresholding: A persistent homology approach. Journal of Mathematical Imaging and Vision, 60(7), 1167-1179.
+The life curve.
 
-#Life
-#NormLife
-#Midlife
-#NormMidlife
+    fun((b, d), _, _) = d - b
+    stat = sum
+
+# Reference
+
+Chung, Y. M., & Lawson, A. (2019). Persistence curves: A canonical framework for summarizing
+persistence diagrams. [arXiv preprint arXiv:1904.07768](https://arxiv.org/abs/1904.07768).
+"""
+function Life(args...; kwargs...)
+    return PersistenceCurve(life, sum, args...; kwargs...)
+end
+life((b, d), _, _) = d - b
+
+"""
+    Midlife
+
+The midlife curve.
+
+    fun((b, d), _, _) = (b + d) / 2
+    stat = sum
+
+# Reference
+
+Chung, Y. M., & Lawson, A. (2019). Persistence curves: A canonical framework for summarizing
+persistence diagrams. [arXiv preprint arXiv:1904.07768](https://arxiv.org/abs/1904.07768).
+"""
+function Midlife(args...; kwargs...)
+    return PersistenceCurve(midlife, sum, args...; kwargs...)
+end
+midlife((b, d), _, _) = (b + d)/2
+
+"""
+    LifeEntropy
+
+The life entropy curve.
+
+    fun((b, d), diag, _) = begin
+        x = (d - b) / sum(d - b for (b, d) in diag)
+        -x * log2(x)
+    end
+    stat = sum
+
+# Reference
+
+Atienza, N., González-Díaz, R., & Soriano-Trigueros, M. (2018). On the stability of
+persistent entropy and new summary functions for TDA. [arXiv preprint
+arXiv:1803.08304](https://arxiv.org/abs/1803.08304).
+"""
+function LifeEntropy(args...; kwargs...)
+    return PersistenceCurve(life_entropy, sum, args...; kwargs...)
+end
+function life_entropy((b, d), diag, _)
+    x = (d - b) / sum(d - b for (b, d) in diag)
+    return x == 0 ? 0.0 : -x * log2(x)
+end
+
+"""
+    MidlifeEntropy
+
+The midlife entropy curve.
+
+    fun((b, d), diag, _) = begin
+        x = (b + d) / sum(b + d for (d, b) in diag)
+        -x * log2(x)
+    end
+    stat = sum
+
+# Reference
+
+Chung, Y. M., & Lawson, A. (2019). Persistence curves: A canonical framework for summarizing
+persistence diagrams. [arXiv preprint arXiv:1904.07768](https://arxiv.org/abs/1904.07768).
+"""
+function MidlifeEntropy(args...; kwargs...)
+    return PersistenceCurve(midlife_entropy, sum, args...; kwargs...)
+end
+function midlife_entropy((b, d), diag, _)
+    x = (d + b) / sum((d + b) for (d, b) in diag)
+    return x == 0 ? 0.0 : -x * log2(x)
+end
+
+"""
+    PDThresholding
+
+The persistence diagram thresholding function.
+
+    fun((b, d), _, t) = (d - t) * (t - b)
+    stat = mean
+
+# Reference
+
+Chung, Y. M., & Day, S. (2018). Topological fidelity and image thresholding: A persistent
+homology approach. Journal of Mathematical Imaging and Vision, 60(7), 1167-1179.
+"""
+function PDThresholding(args...; kwargs...)
+    return PersistenceCurve(thresholding, mean, args...; kwargs...)
+end
+thresholding((b, d), _, t) = (d - t) * (t - b)

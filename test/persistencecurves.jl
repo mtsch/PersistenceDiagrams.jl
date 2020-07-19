@@ -3,7 +3,7 @@ using PersistenceDiagrams
 
 @testset "Construction" begin
     for (start, stop) in ((0, 2), (ℯ, π)), len in (2, 13, 1001)
-        curve = PersistenceCurve(identity, len, start, stop, length=len)
+        curve = PersistenceCurve(identity, sum, start, stop, length=len)
         @testset "moving from `start` to `stop` by `step` yields `len` steps" begin
             t = curve.start
             count = 0
@@ -14,10 +14,11 @@ using PersistenceDiagrams
             @test count == len
         end
         @testset "indexing" begin
-            @test curve[1] == Float64(curve.start + curve.step/2)
+            @test curve[firstindex(curve)] == Float64(curve.start + curve.step/2)
             @test curve[end] == Float64(curve.stop - curve.step/2)
             @test length(curve) == len
             @test eachindex(curve) == 1:len
+            @test length([b for b in curve]) == len
             @test_throws BoundsError curve[0]
             @test_throws BoundsError curve[len + 1]
 
@@ -107,5 +108,95 @@ end
             scape_res .+= Landscape(k, 0, 12, length=24)(diagram)
         end
         @test Silhuette(0, 12, length=24)(diagram) == scape_res
+    end
+end
+
+@testset "sum-based time independent curves" begin
+    diagram = PersistenceDiagram(1, [(1, 3), (2, 4.5)])
+
+    for constructor in (BettiCurve, Life, Midlife, LifeEntropy, MidlifeEntropy)
+        @testset "values are correct for $(nameof(constructor))" begin
+            curve = constructor(0, 5, length=5)
+            result = curve(diagram)
+            x1 = curve.fun(diagram[1], diagram, nothing)
+            x2 = curve.fun(diagram[2], diagram, nothing)
+            @test result[1] == 0.0
+            @test result[2] == x1
+            @test result[3] == x1 + x2
+            @test result[4] == x2
+            @test result[5] == x2 / 2
+        end
+    end
+end
+
+@testset "PDThresholding" begin
+    @testset "is always positive" begin
+        diagram = PersistenceDiagram(1, [(3, 9), (4, 6), (5, 11)])
+        @test all(PDThresholding([diagram])(diagram) .≥ 0)
+    end
+
+    @testset "is highest in the middle for a long interval" begin
+        diagram = PersistenceDiagram(1, [(ℯ, π)])
+        result = PDThresholding([diagram], length=11)(diagram)
+        @test all(result[end ÷ 2 + 1] .≥ result)
+    end
+
+    @testset "is unchanged with multiple equal intervals" begin
+        diagram_1 = PersistenceDiagram(1, [(ℯ, π)])
+        diagram_2 = PersistenceDiagram(1, [(ℯ, π), (ℯ, π)])
+        pdt = PDThresholding([diagram_1, diagram_2])
+        @test pdt(diagram_1) == pdt(diagram_2)
+    end
+end
+
+@testset "Normalization" begin
+    diagram = PersistenceDiagram(2, [
+        (0.0, 1.0),
+        (0.0, 1.0),
+        (ℯ, π),
+        (1.0, 1.5),
+        (1.1, 1.6),
+        (1.2, 1.7),
+        (1.3, 1.8),
+        (1.0, ℯ),
+        (1.0, π),
+        (√5, ℯ),
+    ])
+    for constructor in (BettiCurve, Life, Midlife, LifeEntropy, MidlifeEntropy)
+        @testset "$(nameof(constructor))" begin
+            curve_reg = constructor([diagram])
+            curve_norm = constructor([diagram], normalize=true)
+            @testset "normalization overriding" begin
+                @test curve_reg(diagram, normalize=true) == curve_norm(diagram)
+                @test curve_norm(diagram, normalize=false) == curve_reg(diagram)
+            end
+            @testset "all values in normalized curve are below 1" begin
+                @test all(curve_norm(diagram) .≤ 1)
+            end
+        end
+    end
+
+    @testset "Landscape" begin
+        curve_norm = Landscape(2, [diagram], normalize=true)
+        curve_reg = Landscape(2, [diagram])
+        @testset "normalization overriding" begin
+            @test curve_norm(diagram, normalize=false) == curve_reg(diagram)
+        end
+        @testset "normalization errors" begin
+            @test_throws MethodError curve_norm(diagram)
+        end
+    end
+
+    for constructor in (Silhuette, PDThresholding)
+        @testset "$(nameof(constructor))" begin
+            curve_norm = constructor([diagram], normalize=true)
+            curve_reg = constructor([diagram])
+            @testset "normalization overriding" begin
+                @test curve_norm(diagram, normalize=false) == curve_reg(diagram)
+            end
+            @testset "normalization errors" begin
+                @test_throws MethodError curve_norm(diagram)
+            end
+        end
     end
 end
