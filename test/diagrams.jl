@@ -1,5 +1,6 @@
 using PersistenceDiagrams
 using Compat
+using Test
 
 using PersistenceDiagrams: stripped
 
