@@ -11,20 +11,25 @@ export
     PersistenceInterval, birth, death, persistence,
     RepresentativeInterval, representative, birth_simplex, death_simplex,
     PersistenceDiagram, dim, threshold,
+
     Bottleneck, Wasserstein, weight, matching,
-    PersistenceImage, BettiCurve,
+
+    PersistenceImage, PersistenceCurve, BettiCurve, Landscape, Silhuette, Life, Midlife,
+    LifeEntropy, MidlifeEntropy, PDThresholding,
+
     barcode
 
 using Compat
 using Distances
 using Hungarian
 using RecipesBase
+using Statistics
 
 include("intervals.jl")
 include("diagrams.jl")
 
 include("matching.jl")
-include("betticurves.jl")
+include("persistencecurves.jl")
 include("persistenceimages.jl")
 
 include("plotsrecipes.jl")

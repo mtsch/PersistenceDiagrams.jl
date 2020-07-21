@@ -10,8 +10,8 @@ end
 @safetestset "matching" begin
     include("matching.jl")
 end
-@safetestset "betticurves" begin
-    include("betticurves.jl")
+@safetestset "persistencecurves" begin
+    include("persistencecurves.jl")
 end
 @safetestset "images" begin
     include("persistenceimages.jl")

@@ -58,12 +58,44 @@ matching
 weight
 ```
 
-## Persistence Diagram Vectorization Methods
+## Persistence Diagram Vectorization
+
+```@docs
+PersistenceImage
+```
+
+```@docs
+PersistenceCurve
+```
 
 ```@docs
 BettiCurve
 ```
 
 ```@docs
-PersistenceImage
+Landscape
+```
+
+```@docs
+Silhuette
+```
+
+```@docs
+Life
+```
+
+```@docs
+Midlife
+```
+
+```@docs
+LifeEntropy
+```
+
+```@docs
+MidlifeEntropy
+```
+
+```@docs
+PDThresholding
 ```

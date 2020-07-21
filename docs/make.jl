@@ -10,7 +10,7 @@ makedocs(sitename="PersistenceDiagrams.jl",
          ),
          pages=[
              "Home" => "index.md",
-             "API" => "api/diagrams.md",
+             "API" => "api.md",
          ])
 
 deploydocs(
