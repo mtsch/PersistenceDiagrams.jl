@@ -1,27 +1,73 @@
-abstract type AbstractInterval end
+"""
+    PersistenceInterval
+
+The type that represents a persistence interval. It behaves exactly like a `Tuple{Float64,
+Float64}`, but can have meta data attached to it. The metadata is accessible
+with `getproperty`.
+
+# Example
+
+```jldoctest
+julia> int = PersistenceInterval(1, Inf, meta1=:a, meta2=:b)
+[1.0, ∞) with:
+ meta1: Symbol
+ meta2: Symbol
+
+julia> birth(int), death(int), persistence(int)
+(1.0, Inf, Inf)
+
+julia> isfinite(int)
+false
+
+julia> propertynames(int)
+(:meta1, :meta2)
+
+julia> int.meta1
+:a
+```
+"""
+struct PersistenceInterval{M<:NamedTuple}
+    birth::Float64
+    death::Float64
+    meta::M
+
+    function PersistenceInterval(birth, death; kwargs...)
+        meta = (;kwargs...)
+        return new{typeof(meta)}(Float64(birth), Float64(death), meta)
+    end
+end
+function PersistenceInterval(t::Tuple{<:Any, <:Any}; kwargs...)
+    return PersistenceInterval(t[1], t[2]; kwargs...)
+end
+function PersistenceInterval(int::PersistenceInterval; kwargs...)
+    return PersistenceInterval(int[1], int[2]; kwargs...)
+end
 
 """
     birth(interval)
 
 Get the birth time of `interval`.
 """
-birth
+birth(int::PersistenceInterval) = int.birth
 """
     death(interval)
 
 Get the death time of `interval`.
 """
-death
+death(int::PersistenceInterval) = int.death
 """
     persistence(interval)
 
 Get the persistence of `interval`, which is equal to `death - birth`.
 """
-persistence(int::AbstractInterval) = death(int) - birth(int)
+persistence(int::PersistenceInterval) = death(int) - birth(int)
 
-Base.isfinite(int::AbstractInterval) = isfinite(death(int))
+Base.isfinite(int::PersistenceInterval) = isfinite(death(int))
 
-function Base.iterate(int::AbstractInterval, i=1)
+###
+### Iteration
+###
+function Base.iterate(int::PersistenceInterval, i=1)
     if i == 1
         return birth(int), i+1
     elseif i == 2
@@ -31,12 +77,12 @@ function Base.iterate(int::AbstractInterval, i=1)
     end
 end
 
-Base.length(::AbstractInterval) = 2
-Base.IteratorSize(::Type{<:AbstractInterval}) = Base.HasLength()
-Base.IteratorEltype(::Type{<:AbstractInterval}) = Base.HasEltype()
-Base.eltype(::Type{<:AbstractInterval}) = Float64
+Base.length(::PersistenceInterval) = 2
+Base.IteratorSize(::Type{<:PersistenceInterval}) = Base.HasLength()
+Base.IteratorEltype(::Type{<:PersistenceInterval}) = Base.HasEltype()
+Base.eltype(::Type{<:PersistenceInterval}) = Float64
 
-function Base.getindex(int::AbstractInterval, i)
+function Base.getindex(int::PersistenceInterval, i)
     if i == 1
         return birth(int)
     elseif i == 2
@@ -46,114 +92,82 @@ function Base.getindex(int::AbstractInterval, i)
     end
 end
 
-Base.firstindex(int::AbstractInterval) = 1
-Base.lastindex(int::AbstractInterval) = 2
+Base.firstindex(int::PersistenceInterval) = 1
+Base.lastindex(int::PersistenceInterval) = 2
 
-function Base.:(==)(int1::AbstractInterval, int2::AbstractInterval)
+###
+### Equality and ordering
+###
+function Base.:(==)(int1::PersistenceInterval, int2::PersistenceInterval)
     birth(int1) == birth(int2) && death(int1) == death(int2)
 end
-Base.:(==)(int::AbstractInterval, (b, d)::Tuple) = birth(int) == b && death(int) == d
-Base.:(==)((b, d)::Tuple, int::AbstractInterval) = birth(int) == b && death(int) == d
+Base.:(==)(int::PersistenceInterval, (b, d)::Tuple) = birth(int) == b && death(int) == d
+Base.:(==)((b, d)::Tuple, int::PersistenceInterval) = birth(int) == b && death(int) == d
 
-function Base.isless(int1::AbstractInterval, int2::AbstractInterval)
-    if birth(int1) ≠ birth(int2)
-        return isless(birth(int1), birth(int2))
-    else
-        return isless(death(int1), death(int2))
-    end
+function Base.isless(int1::PersistenceInterval, int2::PersistenceInterval)
+    return (birth(int1), death(int1)) < (birth(int2), death(int2))
 end
 
-
-"""
-    PersistenceInterval{T<:AbstractFloat, C}
-
-The type that represents a persistence interval. It behaves exactly like a `Tuple{Float64,
-Float64}`.
-"""
-struct PersistenceInterval <: AbstractInterval
-    birth::Float64
-    death::Float64
-
-    PersistenceInterval(birth, death) = new(Float64(birth), Float64(death))
-end
-
-function PersistenceInterval(t::Tuple{<:Any, <:Any})
-    return PersistenceInterval(t[1], t[2])
-end
-
-function Base.convert(::Type{PersistenceInterval}, t::Tuple{<:Any, <:Any})
-    return PersistenceInterval(t[1], t[2])
-end
-
-birth(int::PersistenceInterval) = int.birth
-death(int::PersistenceInterval) = int.death
-
+###
+### Printing
+###
 function Base.show(io::IO, int::PersistenceInterval)
     b = round(birth(int), sigdigits=3)
     d = isfinite(death(int)) ? round(death(int), sigdigits=3) : "∞"
     print(io, "[$b, $d)")
 end
 
-"""
-    RepresentativeInterval{P<:AbstractInterval, B, D, R} <: AbstractInterval
-
-A persistence interval with a representative (co)cycles and critical simplices attached.
-"""
-struct RepresentativeInterval{P<:AbstractInterval, B, D, R} <: AbstractInterval
-    # This is done to allow e.g. adding a representative to an interval with an error bar
-    # with minimal fuss.
-    interval::P
-    birth_simplex::B
-    death_simplex::D
-    representative::R
+function Base.show(io::IO, ::MIME"text/plain", int::PersistenceInterval)
+    b = round(birth(int), sigdigits=3)
+    d = isfinite(death(int)) ? round(death(int), sigdigits=3) : "∞"
+    print(io, "[$b, $d)")
+    if !isempty(int.meta)
+        print(io, " with:")
+        for (k, v) in zip(keys(int.meta), int.meta)
+            print(io, "\n ", k, ": ", summary(v))
+        end
+    end
 end
 
-function RepresentativeInterval(birth, death, birth_simplex, death_simplex, rep)
-    return RepresentativeInterval(
-        PersistenceInterval(birth, death), birth_simplex, death_simplex, rep
-    )
+###
+### Metadata
+###
+function Base.getproperty(int::PersistenceInterval, key::Symbol)
+    if hasfield(typeof(int), key)
+        return getfield(int, key)
+    elseif haskey(int.meta, key)
+        return int.meta[key]
+    else
+        error("interval $int has no $key")
+    end
 end
-
-birth(int::RepresentativeInterval) = birth(int.interval)
-death(int::RepresentativeInterval) = death(int.interval)
-
-function Base.show(io::IO, int::RepresentativeInterval)
-    print(io, int.interval)
-    print(io, " with ", length(representative(int)), "-element representative")
-end
-function Base.show(io::IO, ::MIME"text/plain", int::RepresentativeInterval)
-    println(io, int.interval)
-    println(io, " birth_simplex: ", int.birth_simplex)
-    println(io, " death_simplex: ", int.death_simplex)
-    print(io, " representative: ")
-    show(io, MIME"text/plain"(), representative(int))
+function Base.propertynames(int::PersistenceInterval, private=false)
+    if private
+        return tuple(propertynames(int.meta)..., fieldnames(typeof(int))...)
+    else
+        return propertynames(int.meta)
+    end
 end
 
 """
-    representative(interval::RepresentativeInterval)
+    representative(interval::PersistenceInterval)
 
-Get the representative (co)cycle attached to `interval`.
+Get the representative (co)cycle attached to `interval`, if it has one.
 """
-representative(int::RepresentativeInterval) = int.representative
-
-"""
-    birth_simplex(interval::RepresentativeInterval)
-
-Get the critical birth simplex of `interval`.
-"""
-birth_simplex(int::RepresentativeInterval) = int.birth_simplex
+representative(int::PersistenceInterval) = int.representative
 
 """
-    death_simplex(interval::RepresentativeInterval)
+    birth_simplex(interval::PersistenceInterval)
 
-Get the critical death simplex of `interval`.
+Get the critical birth simplex of `interval`, if it has one.
 """
-death_simplex(int::RepresentativeInterval) = int.death_simplex
+birth_simplex(int::PersistenceInterval) = int.birth_simplex
 
 """
-    stripped(int::PersistenceInterval)
+    death_simplex(interval::PersistenceInterval)
 
-Return the an interval with the same birth and death times, but without any additional
-information attached.
+Get the critical death simplex of `interval`, if it has one.
+
+Note: an infinite interval's death simplex is `nothing`.
 """
-stripped(int::AbstractInterval) = PersistenceInterval(birth(int), death(int))
+death_simplex(int::PersistenceInterval) = int.death_simplex
