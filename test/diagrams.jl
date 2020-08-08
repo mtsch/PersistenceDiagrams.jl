@@ -71,7 +71,7 @@ using Test
             "[1.0, 2.0) with:\n" *
             " birth_simplex: Symbol\n" *
             " death_simplex: Symbol\n" *
-            " representative: 4-element Array{Int64,1}"
+            " representative: 4-element $(typeof(r))"
     end
 end
 

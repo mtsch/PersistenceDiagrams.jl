@@ -36,8 +36,8 @@ using PersistenceDiagrams
     end
 
     @testset "ranges are selected correctly when learning parameters" begin
-        diagram_1 = PersistenceDiagram(0, [(0, 1), (0.5, 1), (0.5, 0.6), (1, 1.5), (0.5, Inf)])
-        diagram_2 = PersistenceDiagram(0, [(2, Inf)])
+        diagram_1 = PersistenceDiagram([(0, 1), (0.5, 1), (0.5, 0.6), (1, 1.5), (0.5, Inf)])
+        diagram_2 = PersistenceDiagram([(2, Inf)])
 
         @testset "for diagrams with infinite intervals" begin
             bc = PersistenceCurve((_...) -> 1.0, sum, [diagram_1, diagram_2])
@@ -63,7 +63,7 @@ end
 
 @testset "BettiCurve" begin
     @testset "With basic constructor" begin
-        diagram = PersistenceDiagram(0, [(0, 1), (0.5, 1), (0.5, 0.6), (1, 1.5), (0.5, Inf)])
+        diagram = PersistenceDiagram([(0, 1), (0.5, 1), (0.5, 0.6), (1, 1.5), (0.5, Inf)])
         bc_1 = BettiCurve(0, 2, length=2)
         @test bc_1(diagram) == [2.1, 1.5]
 
@@ -75,8 +75,8 @@ end
     end
 
     @testset "With learned parameters" begin
-        diagram_1 = PersistenceDiagram(0, [(0, 1), (0.5, 1), (0.5, 0.6), (1, 1.5), (0.5, Inf)])
-        diagram_2 = PersistenceDiagram(0, [(2, Inf)])
+        diagram_1 = PersistenceDiagram([(0, 1), (0.5, 1), (0.5, 0.6), (1, 1.5), (0.5, Inf)])
+        diagram_2 = PersistenceDiagram([(2, Inf)])
         @testset "Last bucket only contains infinite intervals." begin
             for len in (10, 20, 40)
                 bc = BettiCurve([diagram_1], length=len)
@@ -91,7 +91,7 @@ end
 end
 
 @testset "Landscape" begin
-    diagram = PersistenceDiagram(1, [(3, 9), (4, 6), (5, 11)])
+    diagram = PersistenceDiagram([(3, 9), (4, 6), (5, 11)])
 
     @testset "(k + 1)-th landscape is below the k-th landscape" begin
         for k in 1:3
@@ -108,7 +108,7 @@ end
 end
 
 @testset "Silhuette" begin
-    diagram = PersistenceDiagram(1, [(3, 9), (4, 6), (5, 11)])
+    diagram = PersistenceDiagram([(3, 9), (4, 6), (5, 11)])
 
     @testset "a silhuette is equivalent to the sum of landscapes" begin
         scape_res = zeros(24)
@@ -120,7 +120,7 @@ end
 end
 
 @testset "sum-based time independent curves" begin
-    diagram = PersistenceDiagram(1, [(1, 3), (2, 4.5)])
+    diagram = PersistenceDiagram([(1, 3), (2, 4.5)])
 
     for constructor in (BettiCurve, Life, Midlife, LifeEntropy, MidlifeEntropy)
         @testset "values are correct for $(nameof(constructor))" begin
@@ -139,26 +139,26 @@ end
 
 @testset "PDThresholding" begin
     @testset "is always positive" begin
-        diagram = PersistenceDiagram(1, [(3, 9), (4, 6), (5, 11)])
+        diagram = PersistenceDiagram([(3, 9), (4, 6), (5, 11)])
         @test all(PDThresholding([diagram])(diagram) .≥ 0)
     end
 
     @testset "is highest in the middle for a long interval" begin
-        diagram = PersistenceDiagram(1, [(ℯ, π)])
+        diagram = PersistenceDiagram([(ℯ, π)])
         result = PDThresholding([diagram], length=11)(diagram)
         @test all(result[end ÷ 2 + 1] .≥ result)
     end
 
     @testset "is unchanged with multiple equal intervals" begin
-        diagram_1 = PersistenceDiagram(1, [(ℯ, π)])
-        diagram_2 = PersistenceDiagram(1, [(ℯ, π), (ℯ, π)])
+        diagram_1 = PersistenceDiagram([(ℯ, π)])
+        diagram_2 = PersistenceDiagram([(ℯ, π), (ℯ, π)])
         pdt = PDThresholding([diagram_1, diagram_2])
         @test pdt(diagram_1) == pdt(diagram_2)
     end
 end
 
 @testset "Normalization" begin
-    diagram = PersistenceDiagram(2, [
+    diagram = PersistenceDiagram([
         (0.0, 1.0),
         (0.0, 1.0),
         (ℯ, π),

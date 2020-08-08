@@ -19,9 +19,10 @@ there are no errors.
 series(args...; kwargs...) = apply_recipe(Dict{Symbol, Any}(kwargs), args...)
 n_series(args...; kwargs...) = length(series(args...; kwargs...))
 
-@testset "helpers" begin
-    @test dim_str(PersistenceDiagram(0, [(1,1)])) == "₀"
-    @test dim_str(PersistenceDiagram(1990, [(1,1)])) == "₁₉₉₀"
+@testset "Helpers" begin
+    @test dim_str(PersistenceDiagram([(1, 1)], dim=0)) == "₀"
+    @test dim_str(PersistenceDiagram([(1, 1)], dim=1990)) == "₁₉₉₀"
+    @test dim_str(PersistenceDiagram([(1, 1)])) == "ₓ"
 
     int1 = PersistenceInterval(3, Inf)
     int2 = PersistenceInterval(1, 2)
@@ -30,10 +31,10 @@ n_series(args...; kwargs...) = length(series(args...; kwargs...))
     @test clamp_death(int2, 5) == 2
     @test clamp_persistence(int2, 5) == 1
 
-    diag1 = PersistenceDiagram(0, [(1, 2), (2, 3), (2, Inf)])
-    diag2 = PersistenceDiagram(0, [(0, 2), (2, 3), (2, 5)])
-    diag3 = PersistenceDiagram(0, [(0, 2), (2, 3), (2, Inf)], threshold=6)
-    diag4 = PersistenceDiagram(0, [(0, 2), (2, 3), (2, 5)], threshold=7)
+    diag1 = PersistenceDiagram([(1, 2), (2, 3), (2, Inf)])
+    diag2 = PersistenceDiagram([(0, 2), (2, 3), (2, 5)])
+    diag3 = PersistenceDiagram([(0, 2), (2, 3), (2, Inf)], threshold=6)
+    diag4 = PersistenceDiagram([(0, 2), (2, 3), (2, 5)], threshold=7)
 
     @test limits((diag1,)) == (0, 3 * 1.25, 3 * 1.25)
     @test limits((diag2,)) == (0, 5, 5 * 1.25)
@@ -48,7 +49,7 @@ n_series(args...; kwargs...) = length(series(args...; kwargs...))
     @test d[:b] == 2
 end
 
-@testset "recipes" begin
+@testset "Recipes" begin
     @testset "InfinityLine" begin
         @test isequal(only(series(InfinityLine, InfinityLine(true))).args, ([NaN],))
         @test only(series(InfinityLine, InfinityLine(true), infinity=5)).args == ([5],)
@@ -59,19 +60,22 @@ end
             InfinityLine, InfinityLine(false), infinity=5
         )).plotattributes[:seriestype] == :hline
     end
+
     @testset "ZeroPersistenceLine" begin
         @test only(series(ZeroPersistenceLine, ZeroPersistenceLine())).args == (identity,)
         @test only(series(
             ZeroPersistenceLine, ZeroPersistenceLine(), persistence=true
         )).args == ([0],)
     end
-    @testset "diagram recipe" begin
-        diag = PersistenceDiagram(0, [(1, 2), (2, 3), (3, Inf)])
+
+    @testset "Diagram recipe" begin
+        diag = PersistenceDiagram([(1, 2), (2, 3), (3, Inf)])
         @test only(series(typeof(diag), diag, letter=:x)).args == ([1, 2, 3],)
         @test only(series(typeof(diag), diag, letter=:y)).args == ([2, 3, Inf],)
         @test only(series(typeof(diag), diag, letter=:y, infinity=4)).args == ([2, 3, 4],)
     end
-    @testset "persistencediagram" begin
+
+    @testset "Persistencediagram" begin
         @test only(series(
             Val{:persistencediagram}, 1:4, 1:4, nothing
         )).plotattributes[:markerstrokecolor] == :auto
@@ -79,11 +83,12 @@ end
             Val{:persistencediagram}, 1:4, 1:4, nothing
         )).plotattributes[:seriestype] == :scatter
     end
-    @testset "diagram plot" begin
-        diag1 = PersistenceDiagram(0, [(3, Inf), (1, 2), (3, 4)])
-        diag2 = PersistenceDiagram(1, [RepresentativeInterval(1, 2, :a, :b, [1, 2, 3]),
-                                       RepresentativeInterval(3, 4, :b, :c, [1, 0])])
-        diag3 = PersistenceDiagram(1, PersistenceInterval[])
+
+    @testset "Diagram plot" begin
+        diag1 = PersistenceDiagram([(3, Inf), (1, 2), (3, 4)])
+        diag2 = PersistenceDiagram([PersistenceInterval(1, 2, a=:a, b=:b, c=[1, 2, 3]),
+                                    PersistenceInterval(3, 4, a=:b, b=:c, c=[1, 0])])
+        diag3 = PersistenceDiagram(PersistenceInterval[])
 
         @test n_series((diag1,)) == 1 + 1 + 1
         @test n_series((diag1,), infinity=5) == 1 + 1 + 1
@@ -94,18 +99,22 @@ end
         @test n_series((diag3,), persistence=true) == 1 + 1 + 1
         @test n_series((diag3, diag3), persistence=true) == 1 + 1 + 2
     end
-    @testset "matching plot" begin
-        diag1 = PersistenceDiagram(0, [(3, 4), (1, 2), (3, 4)])
-        diag2 = PersistenceDiagram(1, [(1, 2), (3, 4)])
+
+    @testset "Matching plot" begin
+        diag1 = PersistenceDiagram([(3, 4), (1, 2), (3, 4)])
+        diag2 = PersistenceDiagram([(1, 2), (3, 4)])
         match = matching(Bottleneck(), diag1, diag2)
 
         @test n_series(match) == 1 + 1 + 1 + 2
     end
-    @testset "barcode plot" begin
-        diag1 = PersistenceDiagram(0, [(3, Inf), (1, 2), (3, 4)])
-        diag2 = PersistenceDiagram(1, [RepresentativeInterval(1, 2, :a, :b, [1, 2, 3]),
-                                       RepresentativeInterval(3, 4, :b, :c, [1, 0])])
-        diag3 = PersistenceDiagram(1, PersistenceInterval[])
+
+    @testset "Barcode plot" begin
+        diag1 = PersistenceDiagram([(3, Inf), (1, 2), (3, 4)])
+        diag2 = PersistenceDiagram([
+            PersistenceInterval(1, 2, a=:a, b=:b, c=[1, 2, 3]),
+            PersistenceInterval(3, 4, a=:b, b=:c, c=[1, 0])
+        ])
+        diag3 = PersistenceDiagram(PersistenceInterval[])
 
         @test n_series(Barcode(diag1)) == 1 + 1
         @test n_series(Barcode((diag1,)), infinity=5) == 1 + 1

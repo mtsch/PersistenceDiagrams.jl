@@ -163,7 +163,7 @@ end
 function Base.show(io::IO, ::MIME"text/plain", pi::PersistenceImage)
     println(io, pi, "(")
     println(io, "  distribution = ", pi.distribution, ",")
-    println(io, "  weight = ", pi.weight)
+    println(io, "  weight = ", pi.weight, ",")
     print(io, ")")
 end
 

@@ -5,7 +5,11 @@ Get `dim` as subscript string.
 """
 function dim_str(diag)
     sub_digits = ("₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉")
-    return join(reverse(sub_digits[digits(dim(diag)) .+ 1]))
+    if hasproperty(diag, :dim)
+        return join(reverse(sub_digits[digits(dim(diag)) .+ 1]))
+    else
+        return "ₓ"
+    end
 end
 function clamp_death(int::PersistenceInterval, t_max)
     return isfinite(int) ? death(int) : t_max
@@ -76,7 +80,9 @@ function limits(diags, infinity=nothing)
     t_lo = reduce(min, t for t in Iterators.flatten((xs..., ys...)); init=0.0)
     t_hi = reduce(max, t for t in Iterators.flatten((xs..., ys...)) if t < Inf; init=0.0)
 
-    threshes = filter(isfinite, threshold.(diags))
+    threshes = filter(isfinite, threshold.(
+        Iterators.filter(d -> hasproperty(d, :threshold), diags)
+    ))
     if isnothing(infinity)
         if !isempty(threshes)
             infinity = maximum(threshes)
@@ -128,7 +134,7 @@ end
         end
     end
 
-    different_dims = allunique(dim.(diags))
+    different_dims = all(d -> hasproperty(d, :dim), diags) && allunique(dim.(diags))
     for (i, diag) in enumerate(diags)
         @series begin
             seriestype := :persistencediagram
@@ -233,7 +239,8 @@ Barcode(diags::Vararg{PersistenceDiagram}) = Barcode(diags)
     @series begin
         InfinityLine(true)
     end
-    different_dims = allunique(dim.(diags))
+
+    different_dims = all(d -> hasproperty(d, :dim), diags) && allunique(dim.(diags))
     for (i, diag) in enumerate(diags)
         @series begin
             seriestype := :path

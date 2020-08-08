@@ -1,7 +1,7 @@
 using PersistenceDiagrams
 using Test
 
-@testset "constructor" begin
+@testset "Constructor" begin
     pi_1 = PersistenceImage((0, 2), (0, 3), size=(10, 15))
     @test length(pi_1.ys) == 11
     @test length(pi_1.xs) == 16
@@ -28,8 +28,8 @@ using Test
     @test_throws ArgumentError PersistenceImage((1, 2), (3, 4), sigma=4, distribution=*)
     @test_throws ArgumentError PersistenceImage((1, 2), (3, 4), slope_end=4, weight=*)
 
-    diagram_1 = PersistenceDiagram(0, [(1, 2), (1, 7), (3, 4), (2, 3)])
-    diagram_2 = PersistenceDiagram(0, [(0, 2), (-1, Inf), (4, 5)])
+    diagram_1 = PersistenceDiagram([(1, 2), (1, 7), (3, 4), (2, 3)])
+    diagram_2 = PersistenceDiagram([(0, 2), (-1, Inf), (4, 5)])
 
     pi_3 = PersistenceImage([diagram_1, diagram_2])
     @test pi_3.ys == range(1, 6, length=6)
@@ -41,16 +41,14 @@ using Test
     @test sprint(show, pi_3) == "5×5 PersistenceImage"
 
     @test sprint((io, x) -> show(io, MIME"text/plain"(), x), pi_1) ==
-        """
-        10×15 PersistenceImage(
-          distribution = PersistenceDiagrams.Binormal(1.0),
-          weight = PersistenceDiagrams.DefaultWeightingFunction(1.0)
-        )"""
+        "10×15 PersistenceImage(\n" *
+        "  distribution = PersistenceDiagrams.Binormal(1.0),\n" *
+        "  weight = PersistenceDiagrams.DefaultWeightingFunction(1.0),\n)"
 end
 
-@testset "transform" begin
-    diagram_1 = PersistenceDiagram(0, [(1, 2), (1, 6), (3, 4), (2, 3)])
-    diagram_2 = PersistenceDiagram(0, [(0, 2), (0, Inf), (5, 5)])
+@testset "Transform" begin
+    diagram_1 = PersistenceDiagram([(1, 2), (1, 6), (3, 4), (2, 3)])
+    diagram_2 = PersistenceDiagram([(0, 2), (0, Inf), (5, 5)])
 
     image_1 = PersistenceImage((0, 2), (0, 3), size=20, weight=*)
     image_2 = PersistenceImage((0, 2), (0, 3), size=(10, 15), slope_end=5)
@@ -63,7 +61,7 @@ end
     @test size(image_2(diagram_2)) == (10, 15)
     @test size(image_3(diagram_2)) == (5, 5)
 
-    diagram_3 = PersistenceDiagram(0, [(1, 1), (2, 2), (3, 3)])
+    diagram_3 = PersistenceDiagram([(1, 1), (2, 2), (3, 3)])
     @test all(iszero, image_1(diagram_3))
     @test all(iszero, image_2(diagram_3))
     @test all(iszero, image_3(diagram_3))

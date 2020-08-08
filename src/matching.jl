@@ -44,18 +44,13 @@ A matching between two persistence diagrams.
 * [`weight(::Matching)`](@ref)
 * [`matching(::Matching)`](@ref)
 """
-struct Matching
-    left::PersistenceDiagram{PersistenceInterval}
-    right::PersistenceDiagram{PersistenceInterval}
+struct Matching{L<:PersistenceDiagram, R<:PersistenceDiagram}
+    left::L
+    right::R
     weight::Float64
     matching::Vector{Pair{Int, Int}}
     bottleneck::Bool
-
-    function Matching(left, right, weight, matching, bottleneck)
-        new(stripped(left), stripped(right), weight, matching, bottleneck)
-    end
 end
-
 
 weight(match::Matching) = match.weight
 
@@ -110,7 +105,7 @@ function Base.show(io::IO, ::MIME"text/plain", match::Matching)
     end
 end
 
-"convert n-element diagram to 2×n matrix"
+# convert n-element diagram to 2×n matrix
 function _to_matrix(diag)
     pts = Tuple{Float64, Float64}[(birth(i), death(i)) for i in diag if isfinite(i)]
     return reshape(reinterpret(Float64, pts), (2, length(pts)))
@@ -129,8 +124,8 @@ For `length(left) == n` and `length(right) == m`, it returns a ``(n m) × (m n)`
 # Example
 
 ```jldoctest
-left = PersistenceDiagram(0, [(0.0, 1.0), (3.0, 4.5)])
-right = PersistenceDiagram(0, [(0.0, 1.0), (4.0, 5.0), (4.0, 7.0)])
+left = PersistenceDiagram([(0.0, 1.0), (3.0, 4.5)])
+right = PersistenceDiagram([(0.0, 1.0), (4.0, 5.0), (4.0, 7.0)])
 
 adj_matrix(left, right)
 
@@ -145,8 +140,8 @@ adj_matrix(left, right)
 ```
 """
 function adj_matrix(left, right, power=1)
-    sort!(left, by=death)
-    sort!(right, by=death)
+    left = sort(left, by=death)
+    right = sort(right, by=death)
 
     n = length(left)
     m = length(right)
@@ -376,8 +371,8 @@ computing distances between very large diagrams!
 # Example
 
 ```jldoctest
-left = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
-right = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
+left = PersistenceDiagram([(1.0, 2.0), (5.0, 8.0)])
+right = PersistenceDiagram([(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
 Bottleneck()(left, right)
 
 # output
@@ -452,8 +447,8 @@ computing distances between very large diagrams!
 # Example
 
 ```jldoctest
-left = PersistenceDiagram(0, [(1.0, 2.0), (5.0, 8.0)])
-right = PersistenceDiagram(0, [(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
+left = PersistenceDiagram([(1.0, 2.0), (5.0, 8.0)])
+right = PersistenceDiagram([(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
 Wasserstein()(left, right)
 
 # output
