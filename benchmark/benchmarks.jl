@@ -1,5 +1,3 @@
-using PersistenceDiagrams
-using Ripserer
 using BenchmarkTools
 
 const SUITE = BenchmarkGroup()
