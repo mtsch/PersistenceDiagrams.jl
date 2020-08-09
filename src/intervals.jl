@@ -31,16 +31,21 @@ struct PersistenceInterval{M<:NamedTuple}
     death::Float64
     meta::M
 
-    function PersistenceInterval(birth, death; kwargs...)
-        meta = (;kwargs...)
-        return new{typeof(meta)}(Float64(birth), Float64(death), meta)
-    end
+end
+function PersistenceInterval(birth, death; kwargs...)
+    meta = (;kwargs...)
+    return PersistenceInterval(Float64(birth), Float64(death), meta)
 end
 function PersistenceInterval(t::Tuple{<:Any, <:Any}; kwargs...)
-    return PersistenceInterval(t[1], t[2]; kwargs...)
+    meta = (;kwargs...)
+    return PersistenceInterval(Float64(t[1]), Float64(t[2]), meta)
 end
 function PersistenceInterval(int::PersistenceInterval; kwargs...)
-    return PersistenceInterval(int[1], int[2]; kwargs...)
+    meta = (;kwargs...)
+    return PersistenceInterval(Float64(int[1]), Float64(int[2]), meta)
+end
+function Base.convert(::Type{PersistenceInterval{M}}, int::PersistenceInterval) where M
+    return PersistenceInterval(int.birth, int.death, convert(M, int.meta))
 end
 
 """

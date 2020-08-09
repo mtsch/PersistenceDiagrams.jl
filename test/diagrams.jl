@@ -15,6 +15,16 @@ using Test
         @test int1 < int2
     end
 
+    @testset "Convertsion" begin
+        M = @NamedTuple begin
+            birth_simplex::Union{Nothing, Symbol}
+            death_simplex::Symbol
+            representative::typeof(r)
+        end
+        T = PersistenceInterval{M}
+        @test typeof(convert(T, int3)) ≡ T
+    end
+
     @testset "Comparison with tuples" begin
         @test int1 == (1, 2)
         @test int2 == (1, Inf)
