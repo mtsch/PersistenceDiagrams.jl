@@ -43,13 +43,12 @@ julia> diag.meta1
 struct PersistenceDiagram{P<:PersistenceInterval, M<:NamedTuple} <: AbstractVector{P}
     intervals::Vector{P}
     meta::M
-
-    function PersistenceDiagram(intervals::Vector{<:PersistenceInterval}; kwargs...)
-        meta = (;kwargs...)
-        return new{eltype(intervals), typeof(meta)}(intervals, meta)
-    end
 end
 
+function PersistenceDiagram(intervals::Vector{<:PersistenceInterval}; kwargs...)
+    meta = (;kwargs...)
+    return PersistenceDiagram(intervals, meta)
+end
 function PersistenceDiagram(intervals::AbstractVector{<:PersistenceInterval}; kwargs...)
     return PersistenceDiagram(collect(intervals); kwargs...)
 end
