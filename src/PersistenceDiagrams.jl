@@ -9,7 +9,7 @@ module PersistenceDiagrams
 
 export
     PersistenceInterval, birth, death, persistence,
-    RepresentativeInterval, representative, birth_simplex, death_simplex,
+    representative, birth_simplex, death_simplex,
     PersistenceDiagram, dim, threshold,
 
     Bottleneck, Wasserstein, weight, matching,

@@ -17,10 +17,6 @@ persistence
 ```
 
 ```@docs
-RepresentativeInterval
-```
-
-```@docs
 representative
 ```
 

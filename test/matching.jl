@@ -5,8 +5,8 @@ using PersistenceDiagrams: adj_matrix,
     BottleneckGraph, depth_layers, augmenting_paths, augment!, hopcroft_karp!
 
 @testset "adj_matrix" begin
-    diag1 = PersistenceDiagram(0, [(1, 2), (1, Inf)])
-    diag2 = PersistenceDiagram(0, [(3, 4), (5, 10), (7, Inf)])
+    diag1 = PersistenceDiagram([(1, 2), (1, Inf)])
+    diag2 = PersistenceDiagram([(3, 4), (5, 10), (7, Inf)])
 
     #                                  1,2 1,∞ 3,3 5,5 7,7
     @test adj_matrix(diag1, diag2) == [2.0 Inf 1.0 Inf Inf  # 3,4
@@ -39,9 +39,9 @@ end
     @test hopcroft_karp!(graph, 1) == ([1 => 1, 3 => 2], false)
 end
 
-@testset "Bottleneck basic" begin
-    diag1 = PersistenceDiagram(0, [(1, 2), (5, 8)])
-    diag2 = PersistenceDiagram(0, [(1, 2), (3, 4), (5, 10)])
+@testset "Bottleneck basics" begin
+    diag1 = PersistenceDiagram([(1, 2), (5, 8)])
+    diag2 = PersistenceDiagram([(1, 2), (3, 4), (5, 10)])
 
     m = Bottleneck()(diag1, diag2, matching=true)
     @test matching(m) == [(5,8) => (5,10)]
@@ -53,9 +53,9 @@ end
     @test weight(Bottleneck(), diag1, diag1) ≡ 0.0
 end
 
-@testset "Wasserstein basic" begin
-    diag1 = PersistenceDiagram(0, [(1, 2), (5, 8)])
-    diag2 = PersistenceDiagram(0, [(1, 2), (3, 4), (5, 10)])
+@testset "Wasserstein basics" begin
+    diag1 = PersistenceDiagram([(1, 2), (5, 8)])
+    diag2 = PersistenceDiagram([(1, 2), (3, 4), (5, 10)])
 
     m = Wasserstein()(diag1, diag2, matching=true)
     @test matching(m) == [(1,2) => (1,2), (3,3) => (3,4), (5,8) => (5,10)]
@@ -70,27 +70,27 @@ end
     @test weight(Wasserstein(), diag1, diag1) ≡ 0.0
 end
 
-@testset "infinite intervals" begin
-    diag1 = PersistenceDiagram(0, [(1, 2), (5, 8), (1, Inf)])
-    diag2 = PersistenceDiagram(0, [(1, 2), (3, 4), (5, 10)])
-    diag3 = PersistenceDiagram(0, [(1, 2), (3, 4), (5, 10), (1, Inf)])
-    diag4 = PersistenceDiagram(1, [(1, Inf)])
-    diag5 = PersistenceDiagram(1, [(2, Inf)])
+@testset "Infinite intervals" begin
+    diag1 = PersistenceDiagram([(1, 2), (5, 8), (1, Inf)])
+    diag2 = PersistenceDiagram([(1, 2), (3, 4), (5, 10)])
+    diag3 = PersistenceDiagram([(1, 2), (3, 4), (5, 10), (1, Inf)])
+    diag4 = PersistenceDiagram([(1, Inf)])
+    diag5 = PersistenceDiagram([(2, Inf)])
 
-    for dist_type in (Bottleneck(), Wasserstein(), Wasserstein(2))
-        @test dist_type(diag1, diag2) ≡ Inf
-        @test dist_type(diag2, diag1) ≡ Inf
-        @test weight(dist_type(diag1, diag2, matching=true)) ≡ Inf
-        @test isempty(matching(dist_type, diag1, diag2))
-        @test dist_type(diag1, diag1) == 0
-        @test 0 < dist_type(diag1, diag3) < Inf
-        @test dist_type(diag4, diag5) == 1
+    for Distance in (Bottleneck(), Wasserstein(), Wasserstein(2))
+        @test Distance(diag1, diag2) ≡ Inf
+        @test Distance(diag2, diag1) ≡ Inf
+        @test weight(Distance(diag1, diag2, matching=true)) ≡ Inf
+        @test isempty(matching(Distance, diag1, diag2))
+        @test Distance(diag1, diag1) == 0
+        @test 0 < Distance(diag1, diag3) < Inf
+        @test Distance(diag4, diag5) == 1
     end
 end
 
-@testset "different sizes" begin
-    diag1 = PersistenceDiagram(5, vcat((90, 100), [(i, i+1) for i in 1:100]))
-    diag2 = PersistenceDiagram(5, [(100, 110)])
+@testset "Different sizes" begin
+    diag1 = PersistenceDiagram(vcat((90, 100), [(i, i+1) for i in 1:100]))
+    diag2 = PersistenceDiagram([(100, 110)])
 
     @test Bottleneck()(diag1, diag2) == 10
     @test Bottleneck()(diag2, diag1) == 10

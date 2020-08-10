@@ -6,11 +6,11 @@ using Random
 Random.seed!(2000)
 suite = BenchmarkGroup()
 
-pd_big = PersistenceDiagram(0, [(rand(), 1 + rand()) for _ in 1:2000])
-pd_med1 = PersistenceDiagram(0, [(rand(), 1 + rand()) for _ in 1:100])
-pd_med2 = PersistenceDiagram(0, [(rand(), 1 + rand()) for _ in 1:100])
-pd_small1 = PersistenceDiagram(0, [(rand(), 1 + rand()) for _ in 1:50])
-pd_small2 = PersistenceDiagram(0, [(rand(), 1 + rand()) for _ in 1:50])
+pd_big = PersistenceDiagram([(rand(), 1 + rand()) for _ in 1:2000])
+pd_med1 = PersistenceDiagram([(rand(), 1 + rand()) for _ in 1:100])
+pd_med2 = PersistenceDiagram([(rand(), 1 + rand()) for _ in 1:100])
+pd_small1 = PersistenceDiagram([(rand(), 1 + rand()) for _ in 1:50])
+pd_small2 = PersistenceDiagram([(rand(), 1 + rand()) for _ in 1:50])
 
 suite["Bottleneck() large a"] =
     @benchmarkable Bottleneck()($pd_big, $pd_med1) seconds=30
