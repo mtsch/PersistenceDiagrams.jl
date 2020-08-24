@@ -120,7 +120,14 @@ function setup_diagram_plot!(d, diags)
     set_default!(d, :title, "Persistence Diagram")
 end
 
-@recipe function f(diags::NTuple{<:Any, PersistenceDiagram})
+@recipe function f(diags::Union{
+    NTuple{<:Any, PersistenceDiagram},
+    AbstractArray{<:PersistenceDiagram},
+    PersistenceDiagram,
+})
+    if diags isa PersistenceDiagram
+        diags = (diags,)
+    end
     setup_diagram_plot!(plotattributes, diags)
 
     # Only plot these if this was constructed with plot, not plot!
@@ -147,25 +154,6 @@ end
             diag, diag
         end
     end
-end
-
-function RecipesBase.plot(diags::Vararg{<:PersistenceDiagram}; kwargs...)
-    return RecipesBase.plot(diags; kwargs...)
-end
-function RecipesBase.plot(diag::PersistenceDiagram; kwargs...)
-    return RecipesBase.plot((diag,); kwargs...)
-end
-function RecipesBase.plot(diags::AbstractArray{<:PersistenceDiagram}; kwargs...)
-    return RecipesBase.plot(diags...; kwargs...)
-end
-function RecipesBase.plot!(diags::Vararg{<:PersistenceDiagram}; kwargs...)
-    return RecipesBase.plot!(diags; kwargs...)
-end
-function RecipesBase.plot!(diag::PersistenceDiagram; kwargs...)
-    return RecipesBase.plot!((diag,); kwargs...)
-end
-function RecipesBase.plot!(diags::AbstractArray{<:PersistenceDiagram}; kwargs...)
-    return RecipesBase.plot!(diags...; kwargs...)
 end
 
 @recipe function f(match::Matching)
