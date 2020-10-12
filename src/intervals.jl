@@ -173,6 +173,7 @@ birth_simplex(int::PersistenceInterval) = int.birth_simplex
 
 Get the critical death simplex of `interval`, if it has one.
 
-Note: an infinite interval's death simplex is `nothing`.
+!!! note
+    An infinite interval's death simplex is `nothing`.
 """
 death_simplex(int::PersistenceInterval) = int.death_simplex
