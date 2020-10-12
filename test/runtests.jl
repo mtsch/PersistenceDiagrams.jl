@@ -1,9 +1,6 @@
 using SafeTestsets
 using Test
 
-@safetestset "Aqua" begin
-    include("aqua.jl")
-end
 @safetestset "diagrams" begin
     include("diagrams.jl")
 end
@@ -18,4 +15,7 @@ end
 end
 @safetestset "plotsrecipes" begin
     include("plotsrecipes.jl")
+end
+@safetestset "aqua" begin
+    include("aqua.jl")
 end

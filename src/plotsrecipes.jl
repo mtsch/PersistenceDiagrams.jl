@@ -257,8 +257,8 @@ end
 """
     barcode(diagram)
 
-Plot the barcode plot of persistence diagram or multiple diagrams diagrams. The `infinity`
-keyword argument determines where the infinity line is placed. If unset, the function tries
-to use `threshold(diagram)` or guess a good position to place the line at.
+Plot the barcode plot of persistence diagram or multiple diagrams in a collection. The
+`infinity` keyword argument determines where the infinity line is placed. If unset, the
+function tries to use `threshold(diagram)`, or guess a good position to place the line at.
 """
 barcode(args...; kwargs...) = RecipesBase.plot(Barcode(args...); kwargs...)
