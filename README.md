@@ -9,10 +9,4 @@ This package provides the `PersistenceInterval` and `PersistenceDiagram` types a
 some functions for working with them. See the
 [docs](https://mtsch.github.io/PersistenceDiagrams.jl/dev/) for more info.
 
-## Overview
-
-This package currently supports the following.
-
-* Persistence diagram plotting.
-* Bottleneck and Wasserstein matching and distance computation.
-* Persistence images.
+To compute persistent homology, use [Ripserer.jl](https://github.com/mtsch/Ripserer.jl).
