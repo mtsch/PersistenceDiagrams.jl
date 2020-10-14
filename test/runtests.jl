@@ -19,3 +19,6 @@ end
 @safetestset "aqua" begin
     include("aqua.jl")
 end
+@safetestset "doctests" begin
+    include("doctests.jl")
+end

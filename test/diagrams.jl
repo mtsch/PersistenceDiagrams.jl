@@ -60,8 +60,14 @@ using Test
         @test int3.death_simplex == :τ
         @test representative(int3) == r
 
-        @test propertynames(int1) == ()
+        @test propertynames(int1) == (:birth, :death)
         @test propertynames(int1, true) == (:birth, :death, :meta)
+        @test propertynames(int3) == (
+            :birth, :death, :birth_simplex, :death_simplex, :representative
+        )
+        @test propertynames(int3, true) == (
+            :birth, :death, :birth_simplex, :death_simplex, :representative, :meta
+        )
 
         @test_throws ErrorException birth_simplex(int1)
         @test_throws ErrorException death_simplex(int1)
