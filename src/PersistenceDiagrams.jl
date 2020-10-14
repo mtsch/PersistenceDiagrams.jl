@@ -11,7 +11,6 @@ export
     PersistenceInterval, birth, death, persistence,
     representative, birth_simplex, death_simplex,
     PersistenceDiagram, dim, threshold,
-    PersistenceResult,
 
     Bottleneck, Wasserstein, weight, matching,
 

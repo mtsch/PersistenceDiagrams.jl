@@ -173,19 +173,29 @@ end
 
 @testset "Tables.jl interface" begin
     diag1 = PersistenceDiagram([
-        PersistenceInterval(1, 2, a=1),
-        PersistenceInterval(1, 3, a=2),
-    ], b=1)
+        PersistenceInterval(1, 2),
+        PersistenceInterval(1, 3),
+    ], dim=0, threshold=4)
+
+    df = DataFrame(diag1)
+    @test names(df) == ["birth", "death", "dim", "threshold"]
+    @test nrow(df) == 2
+    @test PersistenceDiagram(df) == diag1
+
     diag2 = PersistenceDiagram([
         PersistenceInterval(1, 2, a=nothing),
         PersistenceInterval(1, 3, a=nothing),
+        PersistenceInterval(1, 4, a=1),
     ], b=2)
 
-    df = DataFrame(diag)
-    @test names(df) == (:birth, :death, :a, :b)
-    @test nrow(df) == 2
+    df = DataFrame(diag2)
+    @test names(df) == ["birth", "death", "dim", "threshold"]
+    @test nrow(df) == 3
+    @test all(ismissing, df.dim)
+    @test all(ismissing, df.threshold)
 
-    df = DataFrame(Tables.table([diag1, diag2]))
-    @test names(df) == (:birth, :death, :a, :b)
-    @test nrow(df) == 4
+
+    df = DataFrame(PersistenceDiagrams.table([diag1, diag2]))
+    @test names(df) == ["birth", "death", "dim", "threshold"]
+    @test nrow(df) == 5
 end

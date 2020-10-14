@@ -8,7 +8,8 @@ and plotting.
 Can be used as a table with any function that uses the
 [`Tables.jl`](https://github.com/JuliaData/Tables.jl) interface. If you want to use a
 collection of `PersistenceDiagram`s as a single table, use
-[`PersistenceDiagrams.table`](@ref) to convert them first.
+[`PersistenceDiagrams.table`](@ref) to convert them first. Note that only birth, death, dim,
+and threshold are covered by the interface.
 
 # Example
 
@@ -64,6 +65,21 @@ function PersistenceDiagram(
         PersistenceInterval(t; m...)
     end
     return PersistenceDiagram(intervals; kwargs...)
+end
+function PersistenceDiagram(table)
+    rows = Tables.rows(table)
+    if isempty(rows)
+        return PersistenceDiagram([])
+    else
+        firstrow = first(rows)
+        dim = firstrow.dim
+        threshold = firstrow.threshold
+        diagram = PersistenceDiagram(PersistenceInterval[]; dim=dim, threshold=threshold)
+        for row in rows
+            push!(diagram.intervals, PersistenceInterval(row.birth, row.death))
+        end
+        return diagram
+    end
 end
 
 ###

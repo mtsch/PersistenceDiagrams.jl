@@ -7,19 +7,30 @@ function Base.iterate(it::PersistenceDiagramRowIterator, i=1)
         return nothing
     else
         int = it.diagram[i]
-        return (birth=int.birth, death=int.death, int.meta..., it.diagram.meta...), i + 1
+        dim = get(it.diagram.meta, :dim, missing)
+        threshold = get(it.diagram.meta, :threshold, missing)
+        return (birth=int.birth, death=int.death, dim=dim, threshold=threshold), i + 1
     end
 end
 
 Base.IteratorSize(::PersistenceDiagramRowIterator) = Base.HasLength()
 Base.length(it::PersistenceDiagramRowIterator) = length(it.diagram)
-Base.eltype(it::PersistenceDiagramRowIterator) = NamedTuple
 
 Tables.istable(::Type{<:PersistenceDiagram}) = true
 Tables.rowaccess(::Type{<:PersistenceDiagram}) = true
 function Tables.rows(diagram::PersistenceDiagram)
     PersistenceDiagramRowIterator(diagram)
 end
+function Tables.schema(diagram::PersistenceDiagram)
+    D = hasproperty(diagram, :dim) ? Int : Missing
+    T = hasproperty(threshold, :dim) ? Float64 : Missing
+    return Schema(
+        (:birth, :death, :dim, :threshold),
+        (Float64, Float64, D, T),
+    )
+end
+
+Tables.materializer(::PersistenceDiagram) = PersistenceDiagram
 
 struct PersistenceDiagramTable{V<:AbstractVector{<:PersistenceDiagram}}
     diagrams::V
@@ -37,4 +48,10 @@ Tables.istable(::Type{<:PersistenceDiagramTable}) = true
 Tables.rowaccess(::Type{<:PersistenceDiagramTable}) = true
 function Tables.rows(table::PersistenceDiagramTable)
     Iterators.flatten(PersistenceDiagramRowIterator.(table.diagrams))
+end
+function Tables.schema(table::PersistenceDiagramTable)
+    return Schema(
+        (:birth, :death, :dim, :threshold),
+        (Float64, Float64, Union{Int, Missing}, Union{Float64, Missing}),
+    )
 end
