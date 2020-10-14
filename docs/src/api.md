@@ -33,6 +33,10 @@ PersistenceDiagram
 ```
 
 ```@docs
+PersistenceDiagrams.table
+```
+
+```@docs
 barcode(::Union{PersistenceDiagram, AbstractVector{<:PersistenceDiagram}})
 ```
 

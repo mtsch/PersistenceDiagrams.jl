@@ -15,7 +15,7 @@ using Test
         @test int1 < int2
     end
 
-    @testset "Convertsion" begin
+    @testset "Conversion" begin
         M = @NamedTuple begin
             birth_simplex::Union{Nothing, Symbol}
             death_simplex::Symbol
@@ -168,4 +168,23 @@ end
             " [3.0, 4.0)\n" *
             " [3.0, ∞)"
     end
+end
+
+@testset "Tables.jl interface" begin
+    diag1 = PersistenceDiagram([
+        PersistenceInterval(1, 2, a=1),
+        PersistenceInterval(1, 3, a=2),
+    ], b=1)
+    diag2 = PersistenceDiagram([
+        PersistenceInterval(1, 2, a=nothing),
+        PersistenceInterval(1, 3, a=nothing),
+    ], b=2)
+
+    df = DataFrame(diag)
+    @test names(df) == (:birth, :death, :a, :b)
+    @test nrow(df) == 2
+
+    df = DataFrame(Tables.table([diag1, diag2]))
+    @test names(df) == (:birth, :death, :a, :b)
+    @test nrow(df) == 4
 end

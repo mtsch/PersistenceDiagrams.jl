@@ -1,7 +1,7 @@
 name = "PersistenceDiagrams"
 uuid = "90b4794c-894b-4756-a0f8-5efeb5ddf7ae"
 authors = ["mtsch <matijacufar@gmail.com>"]
-version = "0.7.2"
+version = "0.7.3"
 
 [deps]
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
@@ -21,9 +21,10 @@ julia = "1"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Aqua", "Documenter", "SafeTestsets", "Test"]
+test = ["Aqua", "Documenter", "DataFrames", "SafeTestsets", "Test"]
