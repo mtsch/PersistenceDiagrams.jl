@@ -24,9 +24,11 @@ using Distances
 using Hungarian
 using RecipesBase
 using Statistics
+using Tables
 
 include("intervals.jl")
 include("diagrams.jl")
+include("tables.jl")
 
 include("matching.jl")
 include("persistencecurves.jl")

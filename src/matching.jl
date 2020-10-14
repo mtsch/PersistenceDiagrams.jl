@@ -112,7 +112,7 @@ function _to_matrix(diag)
 end
 
 """
-    adj_matrix(left::PersistenceDiagram, right::PersistenceDiagram, power)
+    adjacency_matrix(left::PersistenceDiagram, right::PersistenceDiagram, power)
 
 Get the adjacency matrix of the matching between `left` and `right`. Edge weights are equal
 to distances between intervals raised to the power of `power`. Distances between diagonal
@@ -124,13 +124,11 @@ For `length(left) == n` and `length(right) == m`, it returns a ``(n m) × (m n)`
 # Example
 
 ```jldoctest
-left = PersistenceDiagram([(0.0, 1.0), (3.0, 4.5)])
-right = PersistenceDiagram([(0.0, 1.0), (4.0, 5.0), (4.0, 7.0)])
+julia> left = PersistenceDiagram([(0.0, 1.0), (3.0, 4.5)]);
 
-adj_matrix(left, right)
+julia> right = PersistenceDiagram([(0.0, 1.0), (4.0, 5.0), (4.0, 7.0)]);
 
-# output
-
+julia> PersistenceDiagrams.adjacency_matrix(left, right)
 5×5 Array{Float64,2}:
   0.0   3.5   1.0  Inf   Inf
   4.0   1.0  Inf    1.0  Inf
@@ -139,7 +137,7 @@ adj_matrix(left, right)
  Inf    1.5   0.0   0.0   0.0
 ```
 """
-function adj_matrix(left, right, power=1)
+function adjacency_matrix(left, right, power=1)
     left = sort(left, by=death)
     right = sort(right, by=death)
 
@@ -198,7 +196,7 @@ end
 function BottleneckGraph(left::PersistenceDiagram, right::PersistenceDiagram)
     n = length(left)
     m = length(right)
-    adj = adj_matrix(left, right)
+    adj = adjacency_matrix(left, right)
 
     edges = filter!(isfinite, sort!(unique!(copy(vec(adj)))))
 
@@ -371,13 +369,17 @@ computing distances between very large diagrams!
 # Example
 
 ```jldoctest
-left = PersistenceDiagram([(1.0, 2.0), (5.0, 8.0)])
-right = PersistenceDiagram([(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
-Bottleneck()(left, right)
+julia> left = PersistenceDiagram([(1.0, 2.0), (5.0, 8.0)]);
 
-# output
+julia> right = PersistenceDiagram([(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)]);
 
+julia> Bottleneck()(left, right)
 2.0
+
+julia> Bottleneck()(left, right; matching=true)
+5-element bottleneck Matching with weight 2.0:
+ Pair{PersistenceInterval,PersistenceInterval}([5.0, 8.0), [5.0, 10.0))
+
 ```
 """
 struct Bottleneck <: MatchingDistance end
@@ -447,13 +449,19 @@ computing distances between very large diagrams!
 # Example
 
 ```jldoctest
-left = PersistenceDiagram([(1.0, 2.0), (5.0, 8.0)])
-right = PersistenceDiagram([(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)])
-Wasserstein()(left, right)
+julia> left = PersistenceDiagram([(1.0, 2.0), (5.0, 8.0)]);
 
-# output
+julia> right = PersistenceDiagram([(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)]);
 
+julia> Wasserstein()(left, right)
 3.0
+
+julia> Wasserstein()(left, right; matching=true)
+5-element Matching with weight 3.0:
+ Pair{PersistenceInterval,PersistenceInterval}([1.0, 2.0), [1.0, 2.0))
+ Pair{PersistenceInterval,PersistenceInterval}([3.0, 3.0), [3.0, 4.0))
+ Pair{PersistenceInterval,PersistenceInterval}([5.0, 8.0), [5.0, 10.0))
+
 ```
 """
 struct Wasserstein <: MatchingDistance
@@ -464,7 +472,7 @@ end
 
 function (w::Wasserstein)(left, right; matching=false)
     if count(!isfinite, left) == count(!isfinite, right)
-        adj = adj_matrix(right, left, w.q)
+        adj = adjacency_matrix(right, left, w.q)
         match = collect(i => j for (i, j) in enumerate(hungarian(adj)[1]))
         distance = sum(adj[i, j] for (i, j) in match)^(1 / w.q)
 

@@ -1,5 +1,6 @@
 using PersistenceDiagrams
 using Compat
+using DataFrames
 using Test
 
 @testset "PersistenceInterval" begin
@@ -15,7 +16,7 @@ using Test
         @test int1 < int2
     end
 
-    @testset "Convertsion" begin
+    @testset "Conversion" begin
         M = @NamedTuple begin
             birth_simplex::Union{Nothing, Symbol}
             death_simplex::Symbol
@@ -60,8 +61,14 @@ using Test
         @test int3.death_simplex == :τ
         @test representative(int3) == r
 
-        @test propertynames(int1) == ()
+        @test propertynames(int1) == (:birth, :death)
         @test propertynames(int1, true) == (:birth, :death, :meta)
+        @test propertynames(int3) == (
+            :birth, :death, :birth_simplex, :death_simplex, :representative
+        )
+        @test propertynames(int3, true) == (
+            :birth, :death, :birth_simplex, :death_simplex, :representative, :meta
+        )
 
         @test_throws ErrorException birth_simplex(int1)
         @test_throws ErrorException death_simplex(int1)
@@ -162,4 +169,33 @@ end
             " [3.0, 4.0)\n" *
             " [3.0, ∞)"
     end
+end
+
+@testset "Tables.jl interface" begin
+    diag1 = PersistenceDiagram([
+        PersistenceInterval(1, 2),
+        PersistenceInterval(1, 3),
+    ], dim=0, threshold=4)
+
+    df = DataFrame(diag1)
+    @test names(df) == ["birth", "death", "dim", "threshold"]
+    @test nrow(df) == 2
+    @test PersistenceDiagram(df) == diag1
+
+    diag2 = PersistenceDiagram([
+        PersistenceInterval(1, 2, a=nothing),
+        PersistenceInterval(1, 3, a=nothing),
+        PersistenceInterval(1, 4, a=1),
+    ], dim=1, b=2)
+
+    df = DataFrame(diag2)
+    @test names(df) == ["birth", "death", "dim", "threshold"]
+    @test nrow(df) == 3
+    @test all(ismissing, df.threshold)
+
+    df = DataFrame(PersistenceDiagrams.table([diag1, diag2]))
+    @test names(df) == ["birth", "death", "dim", "threshold"]
+    @test df.dim isa Vector{Int}
+    @test df.threshold isa Vector{Union{Float64, Missing}}
+    @test nrow(df) == 5
 end

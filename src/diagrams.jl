@@ -1,42 +1,41 @@
 """
     PersistenceDiagram{P<:PersistenceInterval} <: AbstractVector{P}
 
-Type for representing persistence diagrams. Behaves exactly like an array of
+Type for representing persistence diagrams. Behaves exactly like a vector of
 `PersistenceInterval`s, but is can have metadata attached to it and supports pretty printing
 and plotting.
+
+Can be used as a table with any function that uses the
+[`Tables.jl`](https://github.com/JuliaData/Tables.jl) interface. If you want to use a
+collection of `PersistenceDiagram`s as a single table, use
+[`PersistenceDiagrams.table`](@ref) to convert them first. Note that only birth, death, dim,
+and threshold are covered by the interface.
 
 # Example
 
 ```jldoctest
-julia> diag = PersistenceDiagram(
-    [(1, 3), (3, 4), (1, Inf)], [(;a=1), (;a=2), (;a=3)], dim=1, meta1=:a
-)
+julia> diagram = PersistenceDiagram([(1, 3), (3, 4), (1, Inf)]; dim=1, custom_metadata=:a)
 3-element 1-dimensional PersistenceDiagram:
  [1.0, 3.0)
  [3.0, 4.0)
  [1.0, ∞)
 
-julia> diag[1]
-[1.0, 3.0) with:
-  a: Int64
+julia> diagram[1]
+[1.0, 3.0)
 
-julia> diag[1].a
-[1.0, 3.0) with:
-  1
-
-julia> sort(diag, by=persistence, rev=true)
+julia> sort(diagram; by=persistence, rev=true)
 3-element 1-dimensional PersistenceDiagram:
  [1.0, ∞)
  [1.0, 3.0)
  [3.0, 4.0)
 
-julia> propertynames(diag)
-(:dim, :meta1)
+julia> propertynames(diagram)
+(:dim, :custom_metadata)
 
-julia> dim(diag)
+julia> dim(diagram)
 1
 
-julia> diag.meta1
+julia> diagram.custom_metadata
 :a
 ```
 """
@@ -59,6 +58,21 @@ function PersistenceDiagram(
         PersistenceInterval(t; m...)
     end
     return PersistenceDiagram(intervals; kwargs...)
+end
+function PersistenceDiagram(table)
+    rows = Tables.rows(table)
+    if isempty(rows)
+        return PersistenceDiagram([])
+    else
+        firstrow = first(rows)
+        dim = firstrow.dim
+        threshold = firstrow.threshold
+        diagram = PersistenceDiagram(PersistenceInterval[]; dim=dim, threshold=threshold)
+        for row in rows
+            push!(diagram.intervals, PersistenceInterval(row.birth, row.death))
+        end
+        return diagram
+    end
 end
 
 ###

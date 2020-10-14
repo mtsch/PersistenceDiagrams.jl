@@ -65,22 +65,17 @@ Infinite intervals in the diagram are ignored.
 # Example
 
 ```jldoctest
-diag_1 = PersistenceDiagram(0, [(0, 1), (0, 1.5), (1, 2)])
-diag_2 = PersistenceDiagram(0, [(1, 2), (1, 1.5)])
-image = PersistenceImage([diag_1, diag_2])
+julia> diag_1 = PersistenceDiagram([(0, 1), (0, 1.5), (1, 2)]);
 
-# output
+julia> diag_2 = PersistenceDiagram([(1, 2), (1, 1.5)]);
 
+julia> image = PersistenceImage([diag_1, diag_2])
 5×5 PersistenceImage(
   distribution = PersistenceDiagrams.Binormal(1.0),
-  weight = PersistenceDiagrams.DefaultWeightingFunction(1.5)
+  weight = PersistenceDiagrams.DefaultWeightingFunction(1.5),
 )
-```
-```jldoctest
-image(diag_1)
 
-# output
-
+julia> image(diag_1)
 5×5 Array{Float64,2}:
  0.266562  0.269891  0.264744  0.251762  0.232227
  0.294472  0.297554  0.291244  0.276314  0.254244
