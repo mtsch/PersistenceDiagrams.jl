@@ -12,7 +12,7 @@ makedocs(
     pages=[
         "Home" => "index.md",
         "API" => "api.md",
-    ]
+    ],
     doctest=false, # Doctests are run as part of testing -- no need to run them twice.
 )
 

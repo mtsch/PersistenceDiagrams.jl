@@ -64,7 +64,7 @@ function Base.iterate(it::PersistenceDiagramTable, st=(1, 1))
     return (birth=int.birth, death=int.death, dim=dim, threshold=threshold), (i + 1, j)
 end
 
-Base.IteratorSize(::PersistenceDiagramRowIterator) = Base.HasLength()
+Base.IteratorSize(::PersistenceDiagramTable) = Base.HasLength()
 Base.length(table::PersistenceDiagramTable) = sum(length.(table.diagrams))
 
 Tables.isrowtable(::Type{<:PersistenceDiagramTable}) = true
