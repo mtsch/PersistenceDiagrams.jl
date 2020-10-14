@@ -43,12 +43,12 @@ Transforms a diagram. `normalize` and `integrate` override defaults set in const
 # Example
 
 ```jldoctest
-diagram = PersistenceDiagram(0, [(0, 1), (0.5, 1), (0.5, 0.6), (1, 1.5), (0.5, Inf)])
-curve = BettiCurve(0, 2, length = 4)
-curve(diagram)
+julia> diagram = PersistenceDiagram([(0, 1), (0.5, 1), (0.5, 0.6), (1, 1.5), (0.5, Inf)]);
 
-# output
+julia> curve = BettiCurve(0, 2, length = 4)
+PersistenceCurve(always_one, sum, 0.0, 2.0; length=4, normalize=false, integrate=true)
 
+julia> curve(diagram)
 4-element Array{Float64,1}:
  1.0
  3.2

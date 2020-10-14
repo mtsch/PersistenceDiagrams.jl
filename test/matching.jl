@@ -1,26 +1,26 @@
 using PersistenceDiagrams
 using Test
 
-using PersistenceDiagrams: adj_matrix,
+using PersistenceDiagrams: adjacency_matrix,
     BottleneckGraph, depth_layers, augmenting_paths, augment!, hopcroft_karp!
 
-@testset "adj_matrix" begin
+@testset "adjacency_matrix" begin
     diag1 = PersistenceDiagram([(1, 2), (1, Inf)])
     diag2 = PersistenceDiagram([(3, 4), (5, 10), (7, Inf)])
 
-    #                                  1,2 1,∞ 3,3 5,5 7,7
-    @test adj_matrix(diag1, diag2) == [2.0 Inf 1.0 Inf Inf  # 3,4
-                                       8.0 Inf Inf 5.0 Inf  # 5,7
-                                       Inf 6.0 Inf Inf Inf  # 7,∞
-                                       1.0 Inf 0.0 0.0 0.0  # 1,1
-                                       Inf Inf 0.0 0.0 0.0] # 1,1
+    #                                        1,2 1,∞ 3,3 5,5 7,7
+    @test adjacency_matrix(diag1, diag2) == [2.0 Inf 1.0 Inf Inf  # 3,4
+                                             8.0 Inf Inf 5.0 Inf  # 5,7
+                                             Inf 6.0 Inf Inf Inf  # 7,∞
+                                             1.0 Inf 0.0 0.0 0.0  # 1,1
+                                             Inf Inf 0.0 0.0 0.0] # 1,1
 
-    @test adj_matrix(diag1, diag2) == adj_matrix(diag2, diag1)'
+    @test adjacency_matrix(diag1, diag2) == adjacency_matrix(diag2, diag1)'
 end
 
 @testset "Hopcroft-Karp" begin
-    adj = [1 1 9;
-           1 9 1;
+    adj = [1 1 9
+           1 9 1
            9 9 2]
     graph = BottleneckGraph(adj, [0, 0, 0], [0, 0, 0], Int[], 3)
 

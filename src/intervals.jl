@@ -8,21 +8,21 @@ with `getproperty`.
 # Example
 
 ```jldoctest
-julia> int = PersistenceInterval(1, Inf, meta1=:a, meta2=:b)
+julia> interval = PersistenceInterval(1, Inf; meta1=:a, meta2=:b)
 [1.0, ∞) with:
  meta1: Symbol
  meta2: Symbol
 
-julia> birth(int), death(int), persistence(int)
+julia> birth(interval), death(interval), persistence(interval)
 (1.0, Inf, Inf)
 
-julia> isfinite(int)
+julia> isfinite(interval)
 false
 
-julia> propertynames(int)
+julia> propertynames(interval)
 (:birth, :death, :meta1, :meta2)
 
-julia> int.meta1
+julia> interval.meta1
 :a
 ```
 """

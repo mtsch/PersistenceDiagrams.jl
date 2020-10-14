@@ -14,35 +14,28 @@ and threshold are covered by the interface.
 # Example
 
 ```jldoctest
-julia> diag = PersistenceDiagram(
-    [(1, 3), (3, 4), (1, Inf)], [(;a=1), (;a=2), (;a=3)], dim=1, meta1=:a
-)
+julia> diagram = PersistenceDiagram([(1, 3), (3, 4), (1, Inf)]; dim=1, custom_metadata=:a)
 3-element 1-dimensional PersistenceDiagram:
  [1.0, 3.0)
  [3.0, 4.0)
  [1.0, ∞)
 
-julia> diag[1]
-[1.0, 3.0) with:
-  a: Int64
+julia> diagram[1]
+[1.0, 3.0)
 
-julia> diag[1].a
-[1.0, 3.0) with:
-  1
-
-julia> sort(diag, by=persistence, rev=true)
+julia> sort(diagram; by=persistence, rev=true)
 3-element 1-dimensional PersistenceDiagram:
  [1.0, ∞)
  [1.0, 3.0)
  [3.0, 4.0)
 
-julia> propertynames(diag)
-(:dim, :meta1)
+julia> propertynames(diagram)
+(:dim, :custom_metadata)
 
-julia> dim(diag)
+julia> dim(diagram)
 1
 
-julia> diag.meta1
+julia> diagram.custom_metadata
 :a
 ```
 """
