@@ -21,20 +21,17 @@ Tables.rowaccess(::Type{<:PersistenceDiagram}) = true
 function Tables.rows(diagram::PersistenceDiagram)
     PersistenceDiagramRowIterator(diagram)
 end
-function Tables.schema(diagram::PersistenceDiagram)
+function Tables.schema(it::PersistenceDiagramRowIterator)
+    diagram = it.diagram
     D = hasproperty(diagram, :dim) ? Int : Missing
-    T = hasproperty(threshold, :dim) ? Float64 : Missing
-    return Schema(
+    T = hasproperty(diagram, :threshold) ? Float64 : Missing
+    return Tables.Schema(
         (:birth, :death, :dim, :threshold),
         (Float64, Float64, D, T),
     )
 end
 
 Tables.materializer(::PersistenceDiagram) = PersistenceDiagram
-
-struct PersistenceDiagramTable{V<:AbstractVector{<:PersistenceDiagram}}
-    diagrams::V
-end
 
 """
     PersistenceDiagrams.table(::AbstractVector{<:PersistenceDiagram})
@@ -43,15 +40,41 @@ Wrap a vector of `PersistenceDiagram`s in a `PersistenceDiagramTable`, which sat
 Tables.jl interface.
 """
 table(ds::AbstractVector{<:PersistenceDiagram}) = PersistenceDiagramTable(ds)
+table(d::PersistenceDiagram) = d
 
-Tables.istable(::Type{<:PersistenceDiagramTable}) = true
-Tables.rowaccess(::Type{<:PersistenceDiagramTable}) = true
-function Tables.rows(table::PersistenceDiagramTable)
-    Iterators.flatten(PersistenceDiagramRowIterator.(table.diagrams))
+struct PersistenceDiagramTable{V<:AbstractVector{<:PersistenceDiagram}}
+    diagrams::V
 end
+
+function Base.iterate(it::PersistenceDiagramTable, st=(1, 1))
+    i, j = st
+    if j > length(it.diagrams)
+        return nothing
+    end
+    if i > length(it.diagrams[j])
+        i = 1; j += 1
+    end
+    if j > length(it.diagrams)
+        return nothing
+    end
+    diagram = it.diagrams[j]
+    int = diagram[i]
+    dim = get(diagram.meta, :dim, missing)
+    threshold = get(diagram.meta, :threshold, missing)
+    return (birth=int.birth, death=int.death, dim=dim, threshold=threshold), (i + 1, j)
+end
+
+Base.IteratorSize(::PersistenceDiagramRowIterator) = Base.HasLength()
+Base.length(table::PersistenceDiagramTable) = sum(length.(table.diagrams))
+
+Tables.isrowtable(::Type{<:PersistenceDiagramTable}) = true
+
 function Tables.schema(table::PersistenceDiagramTable)
-    return Schema(
+    diagrams = table.diagrams
+    D = all(d -> hasproperty(d, :dim), diagrams) ? Int : Union{Int, Missing}
+    T = all(d -> hasproperty(d, :threshold), diagrams) ? Float64 : Union{Float64, Missing}
+    return Tables.Schema(
         (:birth, :death, :dim, :threshold),
-        (Float64, Float64, Union{Int, Missing}, Union{Float64, Missing}),
+        (Float64, Float64, D, T),
     )
 end

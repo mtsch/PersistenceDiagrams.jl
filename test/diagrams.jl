@@ -186,16 +186,16 @@ end
         PersistenceInterval(1, 2, a=nothing),
         PersistenceInterval(1, 3, a=nothing),
         PersistenceInterval(1, 4, a=1),
-    ], b=2)
+    ], dim=1, b=2)
 
     df = DataFrame(diag2)
     @test names(df) == ["birth", "death", "dim", "threshold"]
     @test nrow(df) == 3
-    @test all(ismissing, df.dim)
     @test all(ismissing, df.threshold)
-
 
     df = DataFrame(PersistenceDiagrams.table([diag1, diag2]))
     @test names(df) == ["birth", "death", "dim", "threshold"]
+    @test df.dim isa Vector{Int}
+    @test df.threshold isa Vector{Union{Float64, Missing}}
     @test nrow(df) == 5
 end
