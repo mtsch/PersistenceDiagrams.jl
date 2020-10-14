@@ -20,7 +20,7 @@ julia> isfinite(int)
 false
 
 julia> propertynames(int)
-(:meta1, :meta2)
+(:birth, :death, :meta1, :meta2)
 
 julia> int.meta1
 :a
@@ -148,9 +148,9 @@ function Base.getproperty(int::PersistenceInterval, key::Symbol)
 end
 function Base.propertynames(int::PersistenceInterval, private=false)
     if private
-        return tuple(propertynames(int.meta)..., fieldnames(typeof(int))...)
+        return tuple(:birth, :death, propertynames(int.meta)..., :meta)
     else
-        return propertynames(int.meta)
+        return (:birth, :death, propertynames(int.meta)...)
     end
 end
 
