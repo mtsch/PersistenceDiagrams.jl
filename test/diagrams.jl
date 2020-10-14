@@ -1,5 +1,6 @@
 using PersistenceDiagrams
 using Compat
+using DataFrames
 using Test
 
 @testset "PersistenceInterval" begin
