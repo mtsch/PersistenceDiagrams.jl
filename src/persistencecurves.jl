@@ -1,5 +1,5 @@
 """
-    PersistenceCurves
+    PersistenceCurve
 
 Persistence curves offer a general way to transform a persistence diagram into a vector of
 numbers.
@@ -19,7 +19,7 @@ persistence diagram to a vector of floats.
 * `PersistenceCurve(fun, stat, diagrams; length=10, integreate=true, normalize=false)`:
   learn the `start` and `stop` parameters from a collection of persistence diagrams.
 
-## Keyword arguments
+## Arguments
 
 * `length`: the length of the output. Defaults to 10.
 * `fun`: the function applied to each interval. Must have the following signature.
@@ -114,21 +114,18 @@ function PersistenceCurve(fun, stat, diagrams; length=10, integrate=true, normal
     )
 end
 
+_nameof(f::Function) = nameof(f)
+_nameof(::T) where T = nameof(T)
+
 function Base.show(io::IO, curve::PersistenceCurve)
-    fname = nameof(curve.fun)
-    sname = nameof(curve.stat)
-    return print(
-        io,
-        "PersistenceCurve(",
-        join((fname, sname, string(curve.start), string(curve.stop)), ", "),
-        "; length=",
-        curve.length,
-        ", normalize=",
-        curve.normalize,
-        ", integrate=",
-        curve.integrate,
-        ")",
-    )
+    fname = _nameof(curve.fun)
+    sname = _nameof(curve.stat)
+    print(io, "PersistenceCurve(",
+          join((fname, sname, string(curve.start), string(curve.stop)), ", "),
+          "; length=", curve.length,
+          ", normalize=", curve.normalize,
+          ", integrate=", curve.integrate,
+          ")")
 end
 
 Base.firstindex(bc::PersistenceCurve) = 1
@@ -175,7 +172,7 @@ function (curve::PersistenceCurve)(
 )
     result = integrate ? _integrate(curve, diag) : _sample(curve, diag)
     if normalize
-        norm = curve.stat(curve.fun(int, diag, nothing) for int in diag)
+        norm = curve.stat([curve.fun(int, diag, nothing) for int in diag])
         return result ./ norm
     else
         return result
@@ -241,6 +238,7 @@ The `k`-th persistence landscape.
 # See also
 
 [`PersistenceCurve`](@ref)
+[`Landscapes`](@ref)
 
 # Reference
 
@@ -248,14 +246,65 @@ Bubenik, P. (2015). Statistical topological data analysis using persistence land
 Journal of Machine Learning Research, 16(1),
 77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
 """
-function Landscape(k, args...; kwargs...)
-    return PersistenceCurve(landscape, k_max(k), args...; integrate=false, kwargs...)
+function Landscape(k, args...; length=10)
+    if k < 1
+        throw(ArgumentError("`k` must be positive"))
+    end
+    return PersistenceCurve(
+        landscape, k_max(k), args...; length=10, integrate=false, normalize=false
+    )
 end
 landscape((b, d), _, t) = max(min(t - b, d - t), 0)
 struct k_max
     k::Int
 end
 (m::k_max)(values) = get(sort(values; rev=true), m.k, 0.0)
+
+"""
+    Landscapes(n, args...)
+
+The first `n` persistence landscapes.
+
+    fun((b, d), _, t) = max(min(t - b, d - t), 0)
+    stat = get(sort(values, rev=true), k, 0.0)
+
+Vectorizes to a matrix where each column is a landscape.
+
+# See also
+
+[`PersistenceCurve`](@ref)
+[`Landscape`](@ref)
+
+# Reference
+
+Bubenik, P. (2015). Statistical topological data analysis using persistence landscapes. [The
+Journal of Machine Learning Research, 16(1),
+77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
+"""
+struct Landscapes
+    landscapes::Vector{PersistenceCurve{typeof(landscape), k_max}}
+
+    function Landscapes(n::Int, args...; kwargs...)
+        if n < 1
+            throw(ArgumentError("`n` must be positive"))
+        end
+        landscapes = map(1:n) do i
+            Landscape(i, args...; kwargs...)
+        end
+        return new(landscapes)
+    end
+end
+
+function Base.show(io::IO, ls::Landscapes)
+    l = first(ls.landscapes)
+    print(io, "Landscapes(",
+          join((length(ls.landscapes), string(l.start), string(l.stop)), ", "),
+          "; length=", l.length, ")")
+end
+
+function (ls::Landscapes)(diagram)
+    return mapreduce(l -> l(diagram), hcat, ls.landscapes)
+end
 
 """
     Silhuette
@@ -270,8 +319,8 @@ The sum of persistence landscapes for all values of `k`.
 [`PersistenceCurve`](@ref)
 [`Landscape`](@ref)
 """
-function Silhuette(args...; kwargs...)
-    return PersistenceCurve(landscape, sum, args...; kwargs...)
+function Silhuette(args...; length=10, integrate=true)
+    return PersistenceCurve(landscape, sum, args...; length=length, integrate=integrate)
 end
 
 """
