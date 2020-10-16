@@ -1,8 +1,8 @@
 MMI.ScientificTypes.scitype(::PersistenceDiagram) = PersistenceDiagram
 
-abstract type DiagramVectorizer <: MMI.Unsupervised end
+abstract type AbstractVectorizer <: MMI.Unsupervised end
 
-function MMI.transform(vectorizer::DiagramVectorizer, vectorizers, X)
+function MMI.transform(vectorizer::AbstractVectorizer, vectorizers, X)
     matrix = mapreduce(vcat, Tables.rows(X)) do row
         mapreduce(hcat, vectorizers) do (k, v)
             transpose(vec(v(Tables.getcolumn(row, k))))
@@ -16,8 +16,8 @@ function MMI.transform(vectorizer::DiagramVectorizer, vectorizers, X)
     MMI.table(matrix, names=names)
 end
 
-MMI.input_scitype(::Type{<:DiagramVectorizer}) = MMI.Table(PersistenceDiagram)
-MMI.output_scitype(::Type{<:DiagramVectorizer}) = MMI.Table(MMI.Continuous)
+MMI.input_scitype(::Type{<:AbstractVectorizer}) = MMI.Table(PersistenceDiagram)
+MMI.output_scitype(::Type{<:AbstractVectorizer}) = MMI.Table(MMI.Continuous)
 
 """
     PersistenceImageVectorizer(; kwargs...)
@@ -50,13 +50,24 @@ mapped to a column.
 * [`PersistenceImage`](@ref)
 
 """
-Base.@kwdef mutable struct PersistenceImageVectorizer <: DiagramVectorizer
+mutable struct PersistenceImageVectorizer <: AbstractVectorizer
     distribution::Any = :default
     sigma::Float64 = 1.0
     weight::Any = :default
     slope_end::Float64 = 1.0
     width::Int = 3
     height::Int = 3
+end
+# TODO: replace with Base.@kwdef when 1.6 becomes LTS
+function PersistenceImageVectorizer(
+    distribution=:default,
+    sigma=1.0,
+    weight=:default,
+    slope_end=1.0,
+    width=3,
+    height=3,
+)
+    return PersistenceImageVectorizer(distribution, sigma, weight, slope_end, width, height)
 end
 
 function _is_callable(fun)
@@ -137,7 +148,7 @@ function MMI.fit(v::PersistenceImageVectorizer, ::Int, X)
     return (images, nothing, NamedTuple())
 end
 
-abstract type AbstractCurveVectorizer <: DiagramVectorizer end
+abstract type AbstractCurveVectorizer <: AbstractVectorizer end
 
 _output_size(v::AbstractCurveVectorizer) = v.length
 
@@ -188,13 +199,24 @@ a column.
 * [`PDThresholding`](@ref)
 
 """
-Base.@kwdef mutable struct PersistenceCurveVectorizer <: AbstractCurveVectorizer
-    fun::Function = always_one
-    stat::Function = sum
-    curve::Symbol = :custom
-    integrate::Bool = true
-    normalize::Bool = false
-    length::Int = 5
+mutable struct PersistenceCurveVectorizer <: AbstractCurveVectorizer
+    fun::Function
+    stat::Function
+    curve::Symbol
+    integrate::Bool
+    normalize::Bool
+    length::Int
+end
+# TODO: replace with Base.@kwdef when 1.6 becomes LTS
+function PersistenceCurveVectorizer(
+    fun=always_one,
+    stat=sum,
+    curve=:custom,
+    integrate=true,
+    normalize=false,
+    length=5,
+)
+    return PersistenceCurveVectorizer(fun, stat, curve, integrate, normalize, length)
 end
 
 function MMI.clean!(v::PersistenceCurveVectorizer)
