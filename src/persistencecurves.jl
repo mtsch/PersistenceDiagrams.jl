@@ -220,7 +220,8 @@ they support infinite intervals.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
+
 """
 function BettiCurve(args...; kwargs...)
     return PersistenceCurve(always_one, sum, args...; kwargs...)
@@ -237,7 +238,7 @@ The life curve.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -259,7 +260,7 @@ The midlife curve.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -284,7 +285,7 @@ The life entropy curve.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -313,7 +314,7 @@ The midlife entropy curve.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -338,7 +339,7 @@ The persistence diagram thresholding function.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -360,8 +361,8 @@ The `k`-th persistence landscape.
 
 # See also
 
-[`PersistenceCurve`](@ref)
-[`Landscapes`](@ref)
+* [`PersistenceCurve`](@ref)
+* [`Landscapes`](@ref)
 
 # Reference
 
@@ -395,8 +396,8 @@ Vectorizes to a matrix where each column is a landscape.
 
 # See also
 
-[`PersistenceCurve`](@ref)
-[`Landscape`](@ref)
+* [`PersistenceCurve`](@ref)
+* [`Landscape`](@ref)
 
 # Reference
 
@@ -439,9 +440,9 @@ The sum of persistence landscapes for all values of `k`.
 
 # See also
 
-[`PersistenceCurve`](@ref)
-[`Landscape`](@ref)
-[`Landscapes`](@ref)
+* [`PersistenceCurve`](@ref)
+* [`Landscape`](@ref)
+* [`Landscapes`](@ref)
 """
 function Silhuette(args...; length=10, integrate=true)
     return PersistenceCurve(landscape, sum, args...; length=length, integrate=integrate)

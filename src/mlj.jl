@@ -268,8 +268,8 @@ to a column.
 
 # See also
 
-[`Landscapes`](@ref)
-[`Landscape`](@ref)
+* [`Landscapes`](@ref)
+* [`Landscape`](@ref)
 
 """
 MMI.@mlj_model mutable struct PersistenceLandscapeVectorizer <: AbstractCurveVectorizer

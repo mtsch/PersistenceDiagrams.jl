@@ -7,30 +7,18 @@ See https://mtsch.github.io/PersistenceDiagrams.jl/dev/ for documentation.
 """
 module PersistenceDiagrams
 
-export PersistenceInterval,
-    birth,
-    death,
-    persistence,
-    representative,
-    birth_simplex,
-    death_simplex,
-    PersistenceDiagram,
-    dim,
-    threshold,
-    Bottleneck,
-    Wasserstein,
-    weight,
-    matching,
-    PersistenceImage,
-    PersistenceCurve,
-    BettiCurve,
-    Landscape,
-    Silhuette,
-    Life,
-    Midlife,
-    LifeEntropy,
-    MidlifeEntropy,
-    PDThresholding,
+export
+    PersistenceInterval, birth, death, persistence,
+    representative, birth_simplex, death_simplex,
+    PersistenceDiagram, dim, threshold,
+
+    Bottleneck, Wasserstein, weight, matching,
+
+    PersistenceImage, PersistenceCurve, BettiCurve, Life, Midlife, LifeEntropy,
+    MidlifeEntropy, PDThresholding, Landscape, Landscapes, Silhuette,
+
+    PersistenceImageVectorizer, PersistenceCurveVectorizer, PersistenceLandscapeVectorizer,
+
     barcode
 
 using Compat
