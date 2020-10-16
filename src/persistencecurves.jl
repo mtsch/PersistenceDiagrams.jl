@@ -228,102 +228,6 @@ end
 always_one(_...) = 1.0
 
 """
-    Landscape(k, args...)
-
-The `k`-th persistence landscape.
-
-    fun((b, d), _, t) = max(min(t - b, d - t), 0)
-    stat = get(sort(values, rev=true), k, 0.0)
-
-# See also
-
-[`PersistenceCurve`](@ref)
-[`Landscapes`](@ref)
-
-# Reference
-
-Bubenik, P. (2015). Statistical topological data analysis using persistence landscapes. [The
-Journal of Machine Learning Research, 16(1),
-77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
-"""
-function Landscape(k, args...; length=10)
-    if k < 1
-        throw(ArgumentError("`k` must be positive"))
-    end
-    return PersistenceCurve(
-        landscape, k_max(k), args...; length=10, integrate=false, normalize=false
-    )
-end
-landscape((b, d), _, t) = max(min(t - b, d - t), 0)
-struct k_max
-    k::Int
-end
-(m::k_max)(values) = get(sort(values; rev=true), m.k, 0.0)
-
-"""
-    Landscapes(n, args...)
-
-The first `n` persistence landscapes.
-
-    fun((b, d), _, t) = max(min(t - b, d - t), 0)
-    stat = get(sort(values, rev=true), k, 0.0)
-
-Vectorizes to a matrix where each column is a landscape.
-
-# See also
-
-[`PersistenceCurve`](@ref)
-[`Landscape`](@ref)
-
-# Reference
-
-Bubenik, P. (2015). Statistical topological data analysis using persistence landscapes. [The
-Journal of Machine Learning Research, 16(1),
-77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
-"""
-struct Landscapes
-    landscapes::Vector{PersistenceCurve{typeof(landscape), k_max}}
-
-    function Landscapes(n::Int, args...; kwargs...)
-        if n < 1
-            throw(ArgumentError("`n` must be positive"))
-        end
-        landscapes = map(1:n) do i
-            Landscape(i, args...; kwargs...)
-        end
-        return new(landscapes)
-    end
-end
-
-function Base.show(io::IO, ls::Landscapes)
-    l = first(ls.landscapes)
-    print(io, "Landscapes(",
-          join((length(ls.landscapes), string(l.start), string(l.stop)), ", "),
-          "; length=", l.length, ")")
-end
-
-function (ls::Landscapes)(diagram)
-    return mapreduce(l -> l(diagram), hcat, ls.landscapes)
-end
-
-"""
-    Silhuette
-
-The sum of persistence landscapes for all values of `k`.
-
-    fun((b, d), _, t) = max(min(t - b, d - t), 0)
-    stat = sum
-
-# See also
-
-[`PersistenceCurve`](@ref)
-[`Landscape`](@ref)
-"""
-function Silhuette(args...; length=10, integrate=true)
-    return PersistenceCurve(landscape, sum, args...; length=length, integrate=integrate)
-end
-
-"""
     Life
 
 The life curve.
@@ -445,3 +349,100 @@ function PDThresholding(args...; kwargs...)
     return PersistenceCurve(thresholding, mean, args...; kwargs...)
 end
 thresholding((b, d), _, t) = (d - t) * (t - b)
+
+"""
+    Landscape(k, args...)
+
+The `k`-th persistence landscape.
+
+    fun((b, d), _, t) = max(min(t - b, d - t), 0)
+    stat = get(sort(values, rev=true), k, 0.0)
+
+# See also
+
+[`PersistenceCurve`](@ref)
+[`Landscapes`](@ref)
+
+# Reference
+
+Bubenik, P. (2015). Statistical topological data analysis using persistence landscapes. [The
+Journal of Machine Learning Research, 16(1),
+77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
+"""
+function Landscape(k, args...; length=10)
+    if k < 1
+        throw(ArgumentError("`k` must be positive"))
+    end
+    return PersistenceCurve(
+        landscape, k_max(k), args...; length=10, integrate=false, normalize=false
+    )
+end
+landscape((b, d), _, t) = max(min(t - b, d - t), 0)
+struct k_max
+    k::Int
+end
+(m::k_max)(values) = get(sort(values, rev=true), m.k, 0.0)
+
+"""
+    Landscapes(n, args...)
+
+The first `n` persistence landscapes.
+
+    fun((b, d), _, t) = max(min(t - b, d - t), 0)
+    stat = get(sort(values, rev=true), k, 0.0)
+
+Vectorizes to a matrix where each column is a landscape.
+
+# See also
+
+[`PersistenceCurve`](@ref)
+[`Landscape`](@ref)
+
+# Reference
+
+Bubenik, P. (2015). Statistical topological data analysis using persistence landscapes. [The
+Journal of Machine Learning Research, 16(1),
+77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
+"""
+struct Landscapes
+    landscapes::Vector{PersistenceCurve{typeof(landscape), k_max}}
+
+    function Landscapes(n::Int, args...; kwargs...)
+        if n < 1
+            throw(ArgumentError("`n` must be positive"))
+        end
+        landscapes = map(1:n) do i
+            Landscape(i, args...; kwargs...)
+        end
+        return new(landscapes)
+    end
+end
+
+function Base.show(io::IO, ls::Landscapes)
+    l = first(ls.landscapes)
+    print(io, "Landscapes(",
+          join((length(ls.landscapes), string(l.start), string(l.stop)), ", "),
+          "; length=", l.length, ")")
+end
+
+function (ls::Landscapes)(diagram)
+    return mapreduce(l -> l(diagram), hcat, ls.landscapes)
+end
+
+"""
+    Silhuette
+
+The sum of persistence landscapes for all values of `k`.
+
+    fun((b, d), _, t) = max(min(t - b, d - t), 0)
+    stat = sum
+
+# See also
+
+[`PersistenceCurve`](@ref)
+[`Landscape`](@ref)
+[`Landscapes`](@ref)
+"""
+function Silhuette(args...; length=10, integrate=true)
+    return PersistenceCurve(landscape, sum, args...; length=length, integrate=integrate)
+end

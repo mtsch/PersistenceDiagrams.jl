@@ -40,14 +40,20 @@ using RecipesBase
 using Statistics
 using Tables
 
+import MLJModelInterface
+const MMI = MLJModelInterface
+
 include("intervals.jl")
 include("diagrams.jl")
 include("tables.jl")
 
 include("matching.jl")
+
+#include("vectorization.jl")
 include("persistencecurves.jl")
 include("persistenceimages.jl")
 
+include("mlj.jl")
 include("plotsrecipes.jl")
 
 end
