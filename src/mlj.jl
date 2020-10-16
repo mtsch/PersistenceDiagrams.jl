@@ -1,3 +1,5 @@
+MMI.ScientificTypes.scitype(::PersistenceDiagram) = PersistenceDiagram
+
 abstract type DiagramVectorizer <: MMI.Unsupervised end
 
 function MMI.transform(vectorizer::DiagramVectorizer, vectorizers, X)
@@ -141,8 +143,7 @@ _output_size(v::AbstractCurveVectorizer) = v.length
 
 function MMI.fit(v::AbstractCurveVectorizer, ::Int, X)
     curves = map(Tables.columnnames(X)) do col
-        @show vec(Tables.getcolumn(X, col))
-        col => _curve(vec(Tables.getcolumn(X, col)))
+        col => _curve(v, vec(Tables.getcolumn(X, col)))
     end
     return (curves, nothing, NamedTuple())
 end
@@ -225,10 +226,10 @@ function MMI.clean!(v::PersistenceCurveVectorizer)
     else
         warning *= "Unrecognized curve $(v.curve); using default :custom. "
     end
-    if v.curve ≠ :custom && (v.fun ≢ always_one)
+    if v.curve ≠ :custom && v.fun ≢ always_one && v.fun ≢ fun
         warning *= "Both curve and fun were set; using fun=$fun. "
     end
-    if v.curve ≠ :custom && (v.stat ≢ always_one)
+    if v.curve ≠ :custom && v.stat ≢ always_one && v.stat ≢ stat
         warning *= "Both curve and stat were set; using stat=$stat. "
     end
     v.fun = fun
@@ -275,6 +276,8 @@ MMI.@mlj_model mutable struct PersistenceLandscapeVectorizer <: AbstractCurveVec
     n_landscapes::Int = 1::(_ > 0)
     length::Int = 5::(_ > 0)
 end
+
+_output_size(v::PersistenceLandscapeVectorizer) = v.n_landscapes * v.length
 
 function _curve(v::PersistenceLandscapeVectorizer, diagrams)
     return Landscapes(v.n_landscapes, diagrams; length=v.length)

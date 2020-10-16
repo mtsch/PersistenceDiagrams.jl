@@ -156,7 +156,7 @@ function _value_at!(buff, f, s, diag, t)
             if isfinite(val)
                 push!(buff, val)
             else
-                error("Invalid value $val produced. Please remove infinite intervals")
+                @warn "Skipping infinite intervals" maxlog=1
             end
         end
     end
@@ -345,8 +345,8 @@ The persistence diagram thresholding function.
 Chung, Y. M., & Day, S. (2018). Topological fidelity and image thresholding: A persistent
 homology approach. Journal of Mathematical Imaging and Vision, 60(7), 1167-1179.
 """
-function PDThresholding(args...; kwargs...)
-    return PersistenceCurve(thresholding, mean, args...; kwargs...)
+function PDThresholding(args...; length=10, integrate=true)
+    return PersistenceCurve(thresholding, mean, args...; length=length, integrate=integrate)
 end
 thresholding((b, d), _, t) = (d - t) * (t - b)
 
@@ -374,7 +374,7 @@ function Landscape(k, args...; length=10)
         throw(ArgumentError("`k` must be positive"))
     end
     return PersistenceCurve(
-        landscape, k_max(k), args...; length=10, integrate=false, normalize=false
+        landscape, k_max(k), args...; length=length, integrate=false, normalize=false
     )
 end
 landscape((b, d), _, t) = max(min(t - b, d - t), 0)

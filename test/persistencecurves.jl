@@ -184,28 +184,4 @@ end
             end
         end
     end
-
-    @testset "Landscape" begin
-        curve_norm = Landscape(2, [diagram]; normalize=true)
-        curve_reg = Landscape(2, [diagram])
-        @testset "normalization overriding" begin
-            @test curve_norm(diagram; normalize=false) == curve_reg(diagram)
-        end
-        @testset "normalization errors" begin
-            @test_throws MethodError curve_norm(diagram)
-        end
-    end
-
-    for constructor in (Silhuette, PDThresholding)
-        @testset "$(nameof(constructor))" begin
-            curve_norm = constructor([diagram]; normalize=true)
-            curve_reg = constructor([diagram])
-            @testset "normalization overriding" begin
-                @test curve_norm(diagram; normalize=false) == curve_reg(diagram)
-            end
-            @testset "normalization errors" begin
-                @test_throws MethodError curve_norm(diagram)
-            end
-        end
-    end
 end

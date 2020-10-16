@@ -49,11 +49,10 @@ include("tables.jl")
 
 include("matching.jl")
 
-#include("vectorization.jl")
 include("persistencecurves.jl")
 include("persistenceimages.jl")
-
 include("mlj.jl")
+
 include("plotsrecipes.jl")
 
 end

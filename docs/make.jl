@@ -10,7 +10,13 @@ makedocs(;
         prettyurls=!("local" in ARGS),
         assets=["assets/favicon.ico"],
     ),
-    pages=["Home" => "index.md", "API" => "api.md"],
+    pages=[
+        "Home" => "index.md",
+        "Basics" => "basics.md",
+        "Distances and Matchings" => "distances.md",
+        "Vectorization" => "vectorization.md",
+        "MLJ Models" => "mlj.md",
+    ],
     doctest=false, # Doctests are run as part of testing -- no need to run them twice.
 )
 
