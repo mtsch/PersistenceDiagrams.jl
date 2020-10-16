@@ -51,15 +51,15 @@ mapped to a column.
 
 """
 mutable struct PersistenceImageVectorizer <: AbstractVectorizer
-    distribution::Any = :default
-    sigma::Float64 = 1.0
-    weight::Any = :default
-    slope_end::Float64 = 1.0
-    width::Int = 3
-    height::Int = 3
+    distribution::Any
+    sigma::Float64
+    weight::Any
+    slope_end::Float64
+    width::Int
+    height::Int
 end
 # TODO: replace with Base.@kwdef when 1.6 becomes LTS
-function PersistenceImageVectorizer(
+function PersistenceImageVectorizer(;
     distribution=:default,
     sigma=1.0,
     weight=:default,
@@ -208,7 +208,7 @@ mutable struct PersistenceCurveVectorizer <: AbstractCurveVectorizer
     length::Int
 end
 # TODO: replace with Base.@kwdef when 1.6 becomes LTS
-function PersistenceCurveVectorizer(
+function PersistenceCurveVectorizer(;
     fun=always_one,
     stat=sum,
     curve=:custom,
