@@ -39,13 +39,13 @@ julia> diagram.custom_metadata
 :a
 ```
 """
-struct PersistenceDiagram{P<:PersistenceInterval, M<:NamedTuple} <: AbstractVector{P}
+struct PersistenceDiagram{P<:PersistenceInterval,M<:NamedTuple} <: AbstractVector{P}
     intervals::Vector{P}
     meta::M
 end
 
 function PersistenceDiagram(intervals::Vector{<:PersistenceInterval}; kwargs...)
-    meta = (;kwargs...)
+    meta = (; kwargs...)
     return PersistenceDiagram(intervals, meta)
 end
 function PersistenceDiagram(intervals::AbstractVector{<:PersistenceInterval}; kwargs...)
@@ -89,7 +89,7 @@ function show_intervals(io::IO, diag)
             end
         end
     else
-        for i in 1:limit÷2-2
+        for i in 1:(limit ÷ 2 - 2)
             if isassigned(diag, i)
                 print(io, "\n ", diag[i])
             else
@@ -97,7 +97,7 @@ function show_intervals(io::IO, diag)
             end
         end
         print(io, "\n ⋮")
-        for i in lastindex(diag)-limit÷2+3:lastindex(diag)
+        for i in (lastindex(diag) - limit ÷ 2 + 3):lastindex(diag)
             if isassigned(diag, i)
                 print(io, "\n ", diag[i])
             else
@@ -149,7 +149,7 @@ function Base.getproperty(diag::PersistenceDiagram, key::Symbol)
         error("$diag has no $key")
     end
 end
-function Base.propertynames(diag::PersistenceDiagram, private=false)
+function Base.propertynames(diag::PersistenceDiagram, private::Bool=false)
     if private
         return tuple(propertynames(diag.meta)..., fieldnames(typeof(diag))...)
     else

@@ -30,21 +30,20 @@ struct PersistenceInterval{M<:NamedTuple}
     birth::Float64
     death::Float64
     meta::M
-
 end
 function PersistenceInterval(birth, death; kwargs...)
-    meta = (;kwargs...)
+    meta = (; kwargs...)
     return PersistenceInterval(Float64(birth), Float64(death), meta)
 end
-function PersistenceInterval(t::Tuple{<:Any, <:Any}; kwargs...)
-    meta = (;kwargs...)
+function PersistenceInterval(t::Tuple{<:Any,<:Any}; kwargs...)
+    meta = (; kwargs...)
     return PersistenceInterval(Float64(t[1]), Float64(t[2]), meta)
 end
 function PersistenceInterval(int::PersistenceInterval; kwargs...)
-    meta = (;kwargs...)
+    meta = (; kwargs...)
     return PersistenceInterval(Float64(int[1]), Float64(int[2]), meta)
 end
-function Base.convert(::Type{PersistenceInterval{M}}, int::PersistenceInterval) where M
+function Base.convert(::Type{PersistenceInterval{M}}, int::PersistenceInterval) where {M}
     return PersistenceInterval(int.birth, int.death, convert(M, int.meta))
 end
 
@@ -74,9 +73,9 @@ Base.isfinite(int::PersistenceInterval) = isfinite(death(int))
 ###
 function Base.iterate(int::PersistenceInterval, i=1)
     if i == 1
-        return birth(int), i+1
+        return birth(int), i + 1
     elseif i == 2
-        return death(int), i+1
+        return death(int), i + 1
     else
         return nothing
     end
@@ -104,7 +103,7 @@ Base.lastindex(int::PersistenceInterval) = 2
 ### Equality and ordering
 ###
 function Base.:(==)(int1::PersistenceInterval, int2::PersistenceInterval)
-    birth(int1) == birth(int2) && death(int1) == death(int2)
+    return birth(int1) == birth(int2) && death(int1) == death(int2)
 end
 Base.:(==)(int::PersistenceInterval, (b, d)::Tuple) = birth(int) == b && death(int) == d
 Base.:(==)((b, d)::Tuple, int::PersistenceInterval) = birth(int) == b && death(int) == d
@@ -117,14 +116,14 @@ end
 ### Printing
 ###
 function Base.show(io::IO, int::PersistenceInterval)
-    b = round(birth(int), sigdigits=3)
-    d = isfinite(death(int)) ? round(death(int), sigdigits=3) : "∞"
-    print(io, "[$b, $d)")
+    b = round(birth(int); sigdigits=3)
+    d = isfinite(death(int)) ? round(death(int); sigdigits=3) : "∞"
+    return print(io, "[$b, $d)")
 end
 
 function Base.show(io::IO, ::MIME"text/plain", int::PersistenceInterval)
-    b = round(birth(int), sigdigits=3)
-    d = isfinite(death(int)) ? round(death(int), sigdigits=3) : "∞"
+    b = round(birth(int); sigdigits=3)
+    d = isfinite(death(int)) ? round(death(int); sigdigits=3) : "∞"
     print(io, "[$b, $d)")
     if !isempty(int.meta)
         print(io, " with:")
@@ -146,7 +145,7 @@ function Base.getproperty(int::PersistenceInterval, key::Symbol)
         error("interval $int has no $key")
     end
 end
-function Base.propertynames(int::PersistenceInterval, private=false)
+function Base.propertynames(int::PersistenceInterval, private::Bool=false)
     if private
         return tuple(:birth, :death, propertynames(int.meta)..., :meta)
     else

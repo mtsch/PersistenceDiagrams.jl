@@ -19,16 +19,13 @@ Base.length(it::PersistenceDiagramRowIterator) = length(it.diagram)
 Tables.istable(::Type{<:PersistenceDiagram}) = true
 Tables.rowaccess(::Type{<:PersistenceDiagram}) = true
 function Tables.rows(diagram::PersistenceDiagram)
-    PersistenceDiagramRowIterator(diagram)
+    return PersistenceDiagramRowIterator(diagram)
 end
 function Tables.schema(it::PersistenceDiagramRowIterator)
     diagram = it.diagram
     D = hasproperty(diagram, :dim) ? Int : Missing
     T = hasproperty(diagram, :threshold) ? Float64 : Missing
-    return Tables.Schema(
-        (:birth, :death, :dim, :threshold),
-        (Float64, Float64, D, T),
-    )
+    return Tables.Schema((:birth, :death, :dim, :threshold), (Float64, Float64, D, T))
 end
 
 Tables.materializer(::PersistenceDiagram) = PersistenceDiagram
@@ -52,7 +49,8 @@ function Base.iterate(it::PersistenceDiagramTable, st=(1, 1))
         return nothing
     end
     if i > length(it.diagrams[j])
-        i = 1; j += 1
+        i = 1
+        j += 1
     end
     if j > length(it.diagrams)
         return nothing
@@ -71,10 +69,7 @@ Tables.isrowtable(::Type{<:PersistenceDiagramTable}) = true
 
 function Tables.schema(table::PersistenceDiagramTable)
     diagrams = table.diagrams
-    D = all(d -> hasproperty(d, :dim), diagrams) ? Int : Union{Int, Missing}
-    T = all(d -> hasproperty(d, :threshold), diagrams) ? Float64 : Union{Float64, Missing}
-    return Tables.Schema(
-        (:birth, :death, :dim, :threshold),
-        (Float64, Float64, D, T),
-    )
+    D = all(d -> hasproperty(d, :dim), diagrams) ? Int : Union{Int,Missing}
+    T = all(d -> hasproperty(d, :threshold), diagrams) ? Float64 : Union{Float64,Missing}
+    return Tables.Schema((:birth, :death, :dim, :threshold), (Float64, Float64, D, T))
 end

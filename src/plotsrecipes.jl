@@ -55,7 +55,7 @@ struct ZeroPersistenceLine end
     end
 end
 
-@recipe function f(::Type{D}, diag::D) where D<:AbstractArray{<:PersistenceInterval}
+@recipe function f(::Type{D}, diag::D) where {D<:AbstractArray{<:PersistenceInterval}}
     if plotattributes[:letter] == :x
         return birth.(diag)
     elseif get(plotattributes, :persistence, false)
@@ -69,7 +69,7 @@ end
     seriestype := :scatter
     markerstrokecolor --> :auto
     markeralpha --> 0.5
-    x, y
+    return x, y
 end
 
 function limits(diags, infinity=nothing)
@@ -80,9 +80,9 @@ function limits(diags, infinity=nothing)
     t_lo = reduce(min, t for t in Iterators.flatten((xs..., ys...)); init=0.0)
     t_hi = reduce(max, t for t in Iterators.flatten((xs..., ys...)) if t < Inf; init=0.0)
 
-    threshes = filter(isfinite, threshold.(
-        Iterators.filter(d -> hasproperty(d, :threshold), diags)
-    ))
+    threshes = filter(
+        isfinite, threshold.(Iterators.filter(d -> hasproperty(d, :threshold), diags))
+    )
     if isnothing(infinity)
         if !isempty(threshes)
             infinity = maximum(threshes)
@@ -117,14 +117,16 @@ function setup_diagram_plot!(d, diags)
     set_default!(d, :xguide, "birth")
     set_default!(d, :yguide, d[:persistence] ? "persistence" : "death")
     set_default!(d, :legend, d[:persistence] ? :topright : :bottomright)
-    set_default!(d, :title, "Persistence Diagram")
+    return set_default!(d, :title, "Persistence Diagram")
 end
 
-@recipe function f(diags::Union{
-    NTuple{<:Any, PersistenceDiagram},
-    AbstractArray{<:PersistenceDiagram},
-    PersistenceDiagram,
-})
+@recipe function f(
+    diags::Union{
+        NTuple{<:Any,PersistenceDiagram},
+        AbstractArray{<:PersistenceDiagram},
+        PersistenceDiagram,
+    },
+)
     if diags isa PersistenceDiagram
         diags = (diags,)
     end
@@ -147,7 +149,7 @@ end
             seriestype := :persistencediagram
             if different_dims
                 label --> "H$(dim_str(diag))"
-                markercolor --> dim(diag)+1
+                markercolor --> dim(diag) + 1
             else
                 label --> "H$(dim_str(diag)) ($i)"
             end
@@ -167,9 +169,8 @@ end
 
         xs = Float64[]
         ys = Float64[]
-        for (l, r) in matching(
-            match, bottleneck=get(plotattributes, :bottleneck, match.bottleneck)
-        )
+        for (l, r) in
+            matching(match; bottleneck=get(plotattributes, :bottleneck, match.bottleneck))
             append!(xs, (birth(l), birth(r), NaN))
             if plotattributes[:persistence]
                 append!(ys, (clamp_persistence(l, inf), clamp_persistence(r, inf), NaN))
@@ -201,7 +202,7 @@ end
 end
 
 struct Barcode
-    diags::NTuple{<:Any, PersistenceDiagram}
+    diags::NTuple{<:Any,PersistenceDiagram}
 end
 
 Barcode(diag::PersistenceDiagram) = Barcode((diag,))
@@ -221,7 +222,7 @@ Barcode(diags::Vararg{PersistenceDiagram}) = Barcode(diags)
     _bar_offset --> 0
     bar_offset = plotattributes[:_bar_offset]
     # Infinity line series messes up the limits.
-    n_intervals = mapreduce(length, +, diags, init=0) + bar_offset
+    n_intervals = mapreduce(length, +, diags; init=0) + bar_offset
     ylims --> (1 - n_intervals * 0.05, n_intervals * 1.05)
 
     @series begin
@@ -235,7 +236,7 @@ Barcode(diags::Vararg{PersistenceDiagram}) = Barcode(diags)
             linewidth --> 1
             if different_dims
                 label --> "H$(dim_str(diag))"
-                markercolor --> dim(diag)+1
+                markercolor --> dim(diag) + 1
             else
                 label --> "H$(dim_str(diag)) ($i)"
             end
@@ -252,7 +253,6 @@ Barcode(diags::Vararg{PersistenceDiagram}) = Barcode(diags)
         end
     end
 end
-
 
 """
     barcode(diagram)

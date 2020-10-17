@@ -2,7 +2,7 @@ using PersistenceDiagrams
 using Test
 
 @testset "Constructor" begin
-    pi_1 = PersistenceImage((0, 2), (0, 3), size=(10, 15))
+    pi_1 = PersistenceImage((0, 2), (0, 3); size=(10, 15))
     @test length(pi_1.ys) == 11
     @test length(pi_1.xs) == 16
     @test first(pi_1.ys) == 0
@@ -12,7 +12,7 @@ using Test
     @test pi_1.weight == PersistenceDiagrams.DefaultWeightingFunction(1.0)
     @test pi_1.distribution == PersistenceDiagrams.Binormal(1.0)
 
-    pi_2 = PersistenceImage((1, 3), (2, 4), sigma=2.0, slope_end=3)
+    pi_2 = PersistenceImage((1, 3), (2, 4); sigma=2.0, slope_end=3)
     @test length(pi_2.ys) == 6
     @test length(pi_2.xs) == 6
     @test first(pi_2.ys) == 1
@@ -22,18 +22,18 @@ using Test
     @test pi_2.weight == PersistenceDiagrams.DefaultWeightingFunction(3.0)
     @test pi_2.distribution == PersistenceDiagrams.Binormal(2.0)
 
-    @test PersistenceImage((0, 8), (0, 7), distribution=*).distribution == (*)
-    @test PersistenceImage((0, 8), (0, 7), weight=*).weight == (*)
+    @test PersistenceImage((0, 8), (0, 7); distribution=*).distribution == (*)
+    @test PersistenceImage((0, 8), (0, 7); weight=*).weight == (*)
 
-    @test_throws ArgumentError PersistenceImage((1, 2), (3, 4), sigma=4, distribution=*)
-    @test_throws ArgumentError PersistenceImage((1, 2), (3, 4), slope_end=4, weight=*)
+    @test_throws ArgumentError PersistenceImage((1, 2), (3, 4); sigma=4, distribution=*)
+    @test_throws ArgumentError PersistenceImage((1, 2), (3, 4); slope_end=4, weight=*)
 
     diagram_1 = PersistenceDiagram([(1, 2), (1, 7), (3, 4), (2, 3)])
     diagram_2 = PersistenceDiagram([(0, 2), (-1, Inf), (4, 5)])
 
     pi_3 = PersistenceImage([diagram_1, diagram_2])
-    @test pi_3.ys == range(1, 6, length=6)
-    @test pi_3.xs == range(0, 4, length=6)
+    @test pi_3.ys == range(1, 6; length=6)
+    @test pi_3.xs == range(0, 4; length=6)
     @test pi_3.weight == PersistenceDiagrams.DefaultWeightingFunction(6.0)
 
     @test sprint(show, pi_1) == "10×15 PersistenceImage"
@@ -41,17 +41,17 @@ using Test
     @test sprint(show, pi_3) == "5×5 PersistenceImage"
 
     @test sprint((io, x) -> show(io, MIME"text/plain"(), x), pi_1) ==
-        "10×15 PersistenceImage(\n" *
-        "  distribution = PersistenceDiagrams.Binormal(1.0),\n" *
-        "  weight = PersistenceDiagrams.DefaultWeightingFunction(1.0),\n)"
+          "10×15 PersistenceImage(\n" *
+          "  distribution = PersistenceDiagrams.Binormal(1.0),\n" *
+          "  weight = PersistenceDiagrams.DefaultWeightingFunction(1.0),\n)"
 end
 
 @testset "Transform" begin
     diagram_1 = PersistenceDiagram([(1, 2), (1, 6), (3, 4), (2, 3)])
     diagram_2 = PersistenceDiagram([(0, 2), (0, Inf), (5, 5)])
 
-    image_1 = PersistenceImage((0, 2), (0, 3), size=20, weight=*)
-    image_2 = PersistenceImage((0, 2), (0, 3), size=(10, 15), slope_end=5)
+    image_1 = PersistenceImage((0, 2), (0, 3); size=20, weight=*)
+    image_2 = PersistenceImage((0, 2), (0, 3); size=(10, 15), slope_end=5)
     image_3 = PersistenceImage([diagram_1, diagram_2])
 
     @test size(image_1(diagram_1)) == (20, 20)
