@@ -115,17 +115,23 @@ function PersistenceCurve(fun, stat, diagrams; length=10, integrate=true, normal
 end
 
 _nameof(f::Function) = nameof(f)
-_nameof(::T) where T = nameof(T)
+_nameof(::T) where {T} = nameof(T)
 
 function Base.show(io::IO, curve::PersistenceCurve)
     fname = _nameof(curve.fun)
     sname = _nameof(curve.stat)
-    print(io, "PersistenceCurve(",
-          join((fname, sname, string(curve.start), string(curve.stop)), ", "),
-          "; length=", curve.length,
-          ", normalize=", curve.normalize,
-          ", integrate=", curve.integrate,
-          ")")
+    return print(
+        io,
+        "PersistenceCurve(",
+        join((fname, sname, string(curve.start), string(curve.stop)), ", "),
+        "; length=",
+        curve.length,
+        ", normalize=",
+        curve.normalize,
+        ", integrate=",
+        curve.integrate,
+        ")",
+    )
 end
 
 Base.firstindex(bc::PersistenceCurve) = 1
@@ -156,7 +162,7 @@ function _value_at!(buff, f, s, diag, t)
             if isfinite(val)
                 push!(buff, val)
             else
-                @warn "Skipping infinite intervals" maxlog=1
+                @warn "Skipping infinite intervals" maxlog = 1
             end
         end
     end
@@ -382,7 +388,7 @@ landscape((b, d), _, t) = max(min(t - b, d - t), 0)
 struct k_max
     k::Int
 end
-(m::k_max)(values) = get(sort(values, rev=true), m.k, 0.0)
+(m::k_max)(values) = get(sort(values; rev=true), m.k, 0.0)
 
 """
     Landscapes(n, args...)
@@ -406,7 +412,7 @@ Journal of Machine Learning Research, 16(1),
 77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
 """
 struct Landscapes
-    landscapes::Vector{PersistenceCurve{typeof(landscape), k_max}}
+    landscapes::Vector{PersistenceCurve{typeof(landscape),k_max}}
 
     function Landscapes(n::Int, args...; kwargs...)
         if n < 1
@@ -421,9 +427,14 @@ end
 
 function Base.show(io::IO, ls::Landscapes)
     l = first(ls.landscapes)
-    print(io, "Landscapes(",
-          join((length(ls.landscapes), string(l.start), string(l.stop)), ", "),
-          "; length=", l.length, ")")
+    return print(
+        io,
+        "Landscapes(",
+        join((length(ls.landscapes), string(l.start), string(l.stop)), ", "),
+        "; length=",
+        l.length,
+        ")",
+    )
 end
 
 function (ls::Landscapes)(diagram)

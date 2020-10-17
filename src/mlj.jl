@@ -12,11 +12,9 @@ function MMI.transform(vectorizer::AbstractVectorizer, vectorizers, X)
         end
     end
     names = [
-        Symbol(k, :_, i)
-        for k in first.(vectorizers)
-        for i in 1:_output_size(vectorizer)
+        Symbol(k, :_, i) for k in first.(vectorizers) for i in 1:_output_size(vectorizer)
     ]
-    MMI.table(matrix, names=names)
+    return MMI.table(matrix; names=names)
 end
 
 MMI.input_scitype(::Type{<:AbstractVectorizer}) = MMI.Table(PersistenceDiagram)
@@ -63,12 +61,7 @@ mutable struct PersistenceImageVectorizer <: AbstractVectorizer
 end
 # TODO: replace with Base.@kwdef when 1.6 becomes LTS
 function PersistenceImageVectorizer(;
-    distribution=:default,
-    sigma=1.0,
-    weight=:default,
-    slope_end=1.0,
-    width=3,
-    height=3,
+    distribution=:default, sigma=1.0, weight=:default, slope_end=1.0, width=3, height=3
 )
     return PersistenceImageVectorizer(distribution, sigma, weight, slope_end, width, height)
 end
@@ -212,12 +205,7 @@ mutable struct PersistenceCurveVectorizer <: AbstractCurveVectorizer
 end
 # TODO: replace with Base.@kwdef when 1.6 becomes LTS
 function PersistenceCurveVectorizer(;
-    fun=always_one,
-    stat=sum,
-    curve=:custom,
-    integrate=true,
-    normalize=false,
-    length=5,
+    fun=always_one, stat=sum, curve=:custom, integrate=true, normalize=false, length=5
 )
     return PersistenceCurveVectorizer(fun, stat, curve, integrate, normalize, length)
 end
@@ -272,8 +260,12 @@ end
 
 function _curve(v::PersistenceCurveVectorizer, diagrams)
     return PersistenceCurve(
-        v.fun, v.stat, diagrams;
-        length=v.length, integrate=v.integrate, normalize=v.normalize,
+        v.fun,
+        v.stat,
+        diagrams;
+        length=v.length,
+        integrate=v.integrate,
+        normalize=v.normalize,
     )
 end
 
@@ -309,10 +301,11 @@ function _curve(v::PersistenceLandscapeVectorizer, diagrams)
 end
 
 MMI.metadata_pkg.(
-    (PersistenceImageVectorizer,
-     PersistenceCurveVectorizer,
-     PersistenceLandscapeVectorizer
-     ),
+    (
+        PersistenceImageVectorizer,
+        PersistenceCurveVectorizer,
+        PersistenceLandscapeVectorizer,
+    ),
     name="PersistenceDiagrams",
     uuid="90b4794c-894b-4756-a0f8-5efeb5ddf7ae",
     url="https://github.com/mtsch/PersistenceDiagrams.jl",

@@ -3,5 +3,5 @@ using Aqua
 
 Aqua.test_all(
     PersistenceDiagrams;
-    ambiguities=(;exclude=[in]), # from MLJModelInterface
+    ambiguities=(; exclude=[in]), # from MLJModelInterface
 )
