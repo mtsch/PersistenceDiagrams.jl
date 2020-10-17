@@ -1,3 +1,6 @@
+import MLJModelInterface
+const MMI = MLJModelInterface
+
 MMI.ScientificTypes.scitype(::PersistenceDiagram) = PersistenceDiagram
 
 abstract type AbstractVectorizer <: MMI.Unsupervised end

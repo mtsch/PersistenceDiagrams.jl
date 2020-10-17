@@ -17,8 +17,6 @@ export
     PersistenceImage, PersistenceCurve, BettiCurve, Life, Midlife, LifeEntropy,
     MidlifeEntropy, PDThresholding, Landscape, Landscapes, Silhuette,
 
-    PersistenceImageVectorizer, PersistenceCurveVectorizer, PersistenceLandscapeVectorizer,
-
     barcode
 
 using Compat
@@ -28,9 +26,6 @@ using RecipesBase
 using Statistics
 using Tables
 
-import MLJModelInterface
-const MMI = MLJModelInterface
-
 include("intervals.jl")
 include("diagrams.jl")
 include("tables.jl")
@@ -39,8 +34,17 @@ include("matching.jl")
 
 include("persistencecurves.jl")
 include("persistenceimages.jl")
-include("mlj.jl")
 
 include("plotsrecipes.jl")
+
+# WIP
+include("mlj.jl")
+module MLJPersistenceDiagrams
+using ..PersistenceDiagrams: PersistenceImageVectorizer, PersistenceCurveVectorizer,
+    PersistenceLandscapeVectorizer
+export PersistenceImageVectorizer, PersistenceCurveVectorizer,
+    PersistenceLandscapeVectorizer
+end
+export MLJPersistenceDiagrams
 
 end
