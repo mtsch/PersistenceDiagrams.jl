@@ -5,7 +5,7 @@ function (dwf::DefaultWeightingFunction)(_, y)
     if y ≤ 0
         return 0.0
     elseif 0 < y < dwf.b
-        return y/dwf.b
+        return y / dwf.b
     else
         return 1.0
     end
@@ -15,7 +15,7 @@ struct Binormal
     sigma::Float64
 end
 function (bi::Binormal)(x, y)
-    exp(-(x^2 + y^2) / (2bi.sigma^2)) / (bi.sigma^2 * 2π)
+    return exp(-(x^2 + y^2) / (2bi.sigma^2)) / (bi.sigma^2 * 2π)
 end
 
 """
@@ -91,7 +91,7 @@ Ziegelmeier, L. (2017). Persistence images: A stable vector representation of pe
 homology. [The Journal of Machine Learning Research, 18(1), 218-252]
 (http://www.jmlr.org/papers/volume18/16-337/16-337.pdf).
 """
-struct PersistenceImage{X<:AbstractVector{Float64}, Y<:AbstractVector{Float64}, D, W}
+struct PersistenceImage{X<:AbstractVector{Float64},Y<:AbstractVector{Float64},D,W}
     ys::Y
     xs::X
     distribution::D
@@ -99,13 +99,15 @@ struct PersistenceImage{X<:AbstractVector{Float64}, Y<:AbstractVector{Float64}, 
 end
 
 function PersistenceImage(
-    ys::AbstractArray{Float64}, xs::AbstractArray{Float64};
-    sigma=nothing, distribution=nothing, weight=nothing, slope_end=nothing
+    ys::AbstractArray{Float64},
+    xs::AbstractArray{Float64};
+    sigma=nothing,
+    distribution=nothing,
+    weight=nothing,
+    slope_end=nothing,
 )
     if !isnothing(sigma) && !isnothing(distribution)
-        throw(ArgumentError(
-            "`sigma` and `distribution` can't be specified at the same time"
-        ))
+        throw(ArgumentError("`sigma` and `distribution` can't be specified at the same time"))
     elseif !isnothing(sigma)
         distribution = Binormal(sigma)
     elseif !isnothing(distribution)
@@ -114,9 +116,7 @@ function PersistenceImage(
         distribution = Binormal(1)
     end
     if !isnothing(weight) && !isnothing(slope_end)
-        throw(ArgumentError(
-            "`weight` and `slope_end` can't be specified at the same time"
-        ))
+        throw(ArgumentError("`weight` and `slope_end` can't be specified at the same time"))
     elseif !isnothing(weight)
         weight = weight
     elseif !isnothing(slope_end)
@@ -129,20 +129,20 @@ function PersistenceImage(
 end
 function PersistenceImage(ylims::Tuple, xlims::Tuple; size=5, kwargs...)
     s = length(size) == 1 ? (size, size) : size
-    ys = range(ylims[1], ylims[2], length=s[1] + 1)
-    xs = range(xlims[1], xlims[2], length=s[2] + 1)
+    ys = range(ylims[1], ylims[2]; length=s[1] + 1)
+    xs = range(xlims[1], xlims[2]; length=s[2] + 1)
 
     return PersistenceImage(ys, xs; kwargs...)
 end
 function PersistenceImage(diagrams; kwargs...)
-    min_persistence = minimum(persistence(int) for int in Iterators.flatten(diagrams)
-                              if isfinite(int))
-    max_persistence = maximum(persistence(int) for int in Iterators.flatten(diagrams)
-                              if isfinite(int))
-    min_birth = minimum(birth(int) for int in Iterators.flatten(diagrams)
-                        if isfinite(int))
-    max_birth = maximum(birth(int) for int in Iterators.flatten(diagrams)
-                        if isfinite(int))
+    min_persistence = minimum(
+        persistence(int) for int in Iterators.flatten(diagrams) if isfinite(int)
+    )
+    max_persistence = maximum(
+        persistence(int) for int in Iterators.flatten(diagrams) if isfinite(int)
+    )
+    min_birth = minimum(birth(int) for int in Iterators.flatten(diagrams) if isfinite(int))
+    max_birth = maximum(birth(int) for int in Iterators.flatten(diagrams) if isfinite(int))
     ylims = (min_persistence, max_persistence)
     xlims = (min_birth, max_birth)
     if :weight in keys(kwargs)
@@ -153,13 +153,13 @@ function PersistenceImage(diagrams; kwargs...)
 end
 
 function Base.show(io::IO, pi::PersistenceImage)
-    print(io, "$(length(pi.ys) - 1)×$(length(pi.xs) - 1) PersistenceImage")
+    return print(io, "$(length(pi.ys) - 1)×$(length(pi.xs) - 1) PersistenceImage")
 end
 function Base.show(io::IO, ::MIME"text/plain", pi::PersistenceImage)
     println(io, pi, "(")
     println(io, "  distribution = ", pi.distribution, ",")
     println(io, "  weight = ", pi.weight, ",")
-    print(io, ")")
+    return print(io, ")")
 end
 
 function (pi::PersistenceImage)(diagram::PersistenceDiagram)
@@ -178,10 +178,13 @@ function (pi::PersistenceImage)(diagram::PersistenceDiagram)
             p = persistence(interval)
             w = pi.weight(b, p)
 
-            pixel = (pi.distribution(x_lo - b, y_lo - p) * w +
-                     pi.distribution(x_lo - b, y_hi - p) * w +
-                     pi.distribution(x_hi - b, y_lo - p) * w +
-                     pi.distribution(x_hi - b, y_hi - p) * w) / 4
+            pixel =
+                (
+                    pi.distribution(x_lo - b, y_lo - p) * w +
+                    pi.distribution(x_lo - b, y_hi - p) * w +
+                    pi.distribution(x_hi - b, y_lo - p) * w +
+                    pi.distribution(x_hi - b, y_hi - p) * w
+                ) / 4
 
             result[j, i] += pixel
         end

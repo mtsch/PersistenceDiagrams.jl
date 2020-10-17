@@ -77,7 +77,7 @@ More options listed in Table 1 on page 9 of reference.
 Chung, Y. M., & Lawson, A. (2019). Persistence curves: A canonical framework for summarizing
 persistence diagrams. [arXiv preprint arXiv:1904.07768](https://arxiv.org/abs/1904.07768).
 """
-struct PersistenceCurve{F, S}
+struct PersistenceCurve{F,S}
     fun::F
     stat::S
     integrate::Bool
@@ -90,8 +90,8 @@ struct PersistenceCurve{F, S}
     function PersistenceCurve(
         fun, stat, start, stop; length=10, integrate=true, normalize=false
     )
-        step = range(start, stop, length=length + 1).step
-        return new{typeof(fun), typeof(stat)}(
+        step = range(start, stop; length=length + 1).step
+        return new{typeof(fun),typeof(stat)}(
             fun, stat, integrate, normalize, start, stop, step, length
         )
     end
@@ -117,12 +117,18 @@ end
 function Base.show(io::IO, curve::PersistenceCurve)
     fname = nameof(curve.fun)
     sname = nameof(curve.stat)
-    print(io, "PersistenceCurve(",
-          join((fname, sname, string(curve.start), string(curve.stop)), ", "),
-          "; length=", curve.length,
-          ", normalize=", curve.normalize,
-          ", integrate=", curve.integrate,
-          ")")
+    return print(
+        io,
+        "PersistenceCurve(",
+        join((fname, sname, string(curve.start), string(curve.stop)), ", "),
+        "; length=",
+        curve.length,
+        ", normalize=",
+        curve.normalize,
+        ", integrate=",
+        curve.integrate,
+        ")",
+    )
 end
 
 Base.firstindex(bc::PersistenceCurve) = 1
@@ -131,7 +137,7 @@ Base.length(bc::PersistenceCurve) = bc.length
 Base.eachindex(bc::PersistenceCurve) = Base.OneTo(bc.length)
 function Base.getindex(bc::PersistenceCurve, i::Integer)
     0 < i ≤ bc.length || throw(BoundsError(bc, i))
-    return Float64(bc.start + i * bc.step - bc.step/2)
+    return Float64(bc.start + i * bc.step - bc.step / 2)
 end
 function Base.getindex(bc::PersistenceCurve, is)
     return [bc[i] for i in is]
@@ -184,7 +190,7 @@ function _sample(curve, diag)
 end
 
 function _integrate(curve, diag)
-    ts = unique!(sort!(collect(Iterators.flatten(diag)), rev=true))
+    ts = unique!(sort!(collect(Iterators.flatten(diag)); rev=true))
     pushfirst!(ts, Inf)
     buff = Float64[]
     lo_exact = curve.start
@@ -249,7 +255,7 @@ landscape((b, d), _, t) = max(min(t - b, d - t), 0)
 struct k_max
     k::Int
 end
-(m::k_max)(values) = get(sort(values, rev=true), m.k, 0.0)
+(m::k_max)(values) = get(sort(values; rev=true), m.k, 0.0)
 
 """
     Silhuette
@@ -310,7 +316,7 @@ persistence diagrams. [arXiv preprint arXiv:1904.07768](https://arxiv.org/abs/19
 function Midlife(args...; kwargs...)
     return PersistenceCurve(midlife, sum, args...; kwargs...)
 end
-midlife((b, d), _, _) = (b + d)/2
+midlife((b, d), _, _) = (b + d) / 2
 
 """
     LifeEntropy

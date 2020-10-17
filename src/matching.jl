@@ -19,7 +19,7 @@ Get the weight of the matching between persistence diagrams `left` and `right`.
 * [`Bottleneck`](@ref)
 * [`Wasserstein`](@ref)
 """
-weight(dist::MatchingDistance, left, right) = dist(left, right, matching=false)
+weight(dist::MatchingDistance, left, right) = dist(left, right; matching=false)
 """
     matching(::MatchingDistance, left, right)
     matching(::Matching)
@@ -32,7 +32,7 @@ Get the matching between persistence diagrams `left` and `right`.
 * [`Bottleneck`](@ref)
 * [`Wasserstein`](@ref)
 """
-matching(dist::MatchingDistance, left, right) = dist(left, right, matching=true)
+matching(dist::MatchingDistance, left, right) = dist(left, right; matching=true)
 
 """
     Matching
@@ -44,11 +44,11 @@ A matching between two persistence diagrams.
 * [`weight(::Matching)`](@ref)
 * [`matching(::Matching)`](@ref)
 """
-struct Matching{L<:PersistenceDiagram, R<:PersistenceDiagram}
+struct Matching{L<:PersistenceDiagram,R<:PersistenceDiagram}
     left::L
     right::R
     weight::Float64
-    matching::Vector{Pair{Int, Int}}
+    matching::Vector{Pair{Int,Int}}
     bottleneck::Bool
 end
 
@@ -68,7 +68,7 @@ function distance(int1, int2)
 end
 
 function matching(match::Matching; bottleneck=match.bottleneck)
-    result = Pair{PersistenceInterval, PersistenceInterval}[]
+    result = Pair{PersistenceInterval,PersistenceInterval}[]
     n = length(match.left)
     m = length(match.right)
     for (i, j) in match.matching
@@ -95,7 +95,7 @@ end
 
 function Base.show(io::IO, match::Matching)
     b = match.bottleneck ? "bottleneck " : ""
-    print(io, "$(length(match))-element $(b)Matching with weight $(match.weight)")
+    return print(io, "$(length(match))-element $(b)Matching with weight $(match.weight)")
 end
 function Base.show(io::IO, ::MIME"text/plain", match::Matching)
     print(io, match)
@@ -107,7 +107,7 @@ end
 
 # convert n-element diagram to 2×n matrix
 function _to_matrix(diag)
-    pts = Tuple{Float64, Float64}[(birth(i), death(i)) for i in diag if isfinite(i)]
+    pts = Tuple{Float64,Float64}[(birth(i), death(i)) for i in diag if isfinite(i)]
     return reshape(reinterpret(Float64, pts), (2, length(pts)))
 end
 
@@ -138,16 +138,16 @@ julia> PersistenceDiagrams.adjacency_matrix(left, right)
 ```
 """
 function adjacency_matrix(left, right, power=1)
-    left = sort(left, by=death)
-    right = sort(right, by=death)
+    left = sort(left; by=death)
+    right = sort(right; by=death)
 
     n = length(left)
     m = length(right)
     adj = fill(Inf, n + m, m + n)
 
-    dists = pairwise(Chebyshev(), _to_matrix(right), _to_matrix(left), dims=2)
+    dists = pairwise(Chebyshev(), _to_matrix(right), _to_matrix(left); dims=2)
     adj[axes(dists)...] .= dists
-    for i in size(dists, 2)+1:n, j in size(dists, 1)+1:m
+    for i in (size(dists, 2) + 1):n, j in (size(dists, 1) + 1):m
         adj[j, i] = abs(birth(left[i]) - birth(right[j]))
     end
     for i in 1:n
@@ -156,10 +156,10 @@ function adjacency_matrix(left, right, power=1)
     for j in 1:m
         adj[j, j + n] = persistence(right[j])
     end
-    adj[m + 1:m + n, n + 1:n + m] .= 0.0
+    adj[(m + 1):(m + n), (n + 1):(n + m)] .= 0.0
 
     if power ≠ 1
-        return adj.^power
+        return adj .^ power
     else
         return adj
     end
@@ -267,7 +267,7 @@ function augmenting_paths(graph::BottleneckGraph, ε)
     prev = fill(0, graph.n_vertices)
     rights = Int[]
     lefts = Int[]
-    stack = Tuple{Int, Int}[]
+    stack = Tuple{Int,Int}[]
 
     for l_start in exposed_left(graph)
         empty!(stack)
@@ -318,7 +318,7 @@ function unmatch_all!(graph::BottleneckGraph)
 end
 
 function augment!(graph, p)
-    for i in 1:2:length(p) - 1
+    for i in 1:2:(length(p) - 1)
         l, r = p[i], p[i + 1]
         graph.match_left[l] = r
         graph.match_right[r] = l
@@ -334,8 +334,8 @@ function hopcroft_karp!(graph, ε)
         end
         paths = augmenting_paths(graph, ε)
     end
-    matching = [i => graph.match_left[i]
-                for i in 1:graph.n_vertices if graph.match_left[i] ≠ 0]
+    matching =
+        [i => graph.match_left[i] for i in 1:(graph.n_vertices) if graph.match_left[i] ≠ 0]
     is_perfect = length(matching) == graph.n_vertices
 
     return matching, is_perfect
@@ -387,7 +387,7 @@ struct Bottleneck <: MatchingDistance end
 function (::Bottleneck)(left, right; matching=false)
     if count(!isfinite, left) ≠ count(!isfinite, right)
         if matching
-            return Matching(left, right, Inf, Pair{Int, Int}[], true)
+            return Matching(left, right, Inf, Pair{Int,Int}[], true)
         else
             return Inf
         end
@@ -483,7 +483,7 @@ function (w::Wasserstein)(left, right; matching=false)
         end
     else
         if matching
-            return Matching(left, right, Inf, Pair{Int, Int}[], false)
+            return Matching(left, right, Inf, Pair{Int,Int}[], false)
         else
             return Inf
         end
