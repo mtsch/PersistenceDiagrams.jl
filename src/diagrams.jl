@@ -149,7 +149,7 @@ function Base.getproperty(diag::PersistenceDiagram, key::Symbol)
         error("$diag has no $key")
     end
 end
-function Base.propertynames(diag::PersistenceDiagram, private=false)
+function Base.propertynames(diag::PersistenceDiagram, private::Bool=false)
     if private
         return tuple(propertynames(diag.meta)..., fieldnames(typeof(diag))...)
     else

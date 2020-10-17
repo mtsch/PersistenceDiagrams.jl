@@ -145,7 +145,7 @@ function Base.getproperty(int::PersistenceInterval, key::Symbol)
         error("interval $int has no $key")
     end
 end
-function Base.propertynames(int::PersistenceInterval, private=false)
+function Base.propertynames(int::PersistenceInterval, private::Bool=false)
     if private
         return tuple(:birth, :death, propertynames(int.meta)..., :meta)
     else
