@@ -7,13 +7,13 @@ using PersistenceDiagrams.MLJPersistenceDiagrams
 ```
 
 ```@docs
-PersistenceImageVectorizer
+PersistenceDiagrams.PersistenceImageVectorizer
 ```
 
 ```@docs
-PersistenceCurveVectorizer
+PersistenceDiagrams.PersistenceCurveVectorizer
 ```
 
 ```@docs
-PersistenceLandscapeVectorizer
+PersistenceDiagrams.PersistenceLandscapeVectorizer
 ```
