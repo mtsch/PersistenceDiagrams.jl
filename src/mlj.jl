@@ -5,7 +5,15 @@ MMI.ScientificTypes.scitype(::PersistenceDiagram) = PersistenceDiagram
 
 abstract type AbstractVectorizer <: MMI.Unsupervised end
 
+function MMI.fit(v::AbstractVectorizer, ::Int, X)
+    vectorizers = map(Tables.columnnames(X)) do col
+        col => _vectorizer(v, vec(Tables.getcolumn(X, col)))
+    end
+    return (vectorizers, nothing, NamedTuple())
+end
+
 function MMI.transform(vectorizer::AbstractVectorizer, vectorizers, X)
+    # TODO: drop mapreduce
     matrix = mapreduce(vcat, Tables.rows(X)) do row
         mapreduce(hcat, vectorizers) do (k, v)
             transpose(vec(v(Tables.getcolumn(row, k))))
@@ -58,12 +66,23 @@ mutable struct PersistenceImageVectorizer <: AbstractVectorizer
     slope_end::Float64
     width::Int
     height::Int
+    margin::Float64
+    zero_start::Bool
 end
 # TODO: replace with Base.@kwdef when 1.6 becomes LTS
 function PersistenceImageVectorizer(;
-    distribution=:default, sigma=nothing, weight=:default, slope_end=1.0, width=3, height=3
+    distribution=:default,
+    sigma=-1,
+    weight=:default,
+    slope_end=1.0,
+    width=5,
+    height=5,
+    margin=0.1,
+    zero_start=true,
 )
-    return PersistenceImageVectorizer(distribution, sigma, weight, slope_end, width, height)
+    return PersistenceImageVectorizer(
+        distribution, sigma, weight, slope_end, width, height, margin, zero_start
+    )
 end
 
 function _is_callable(fun)
@@ -83,11 +102,12 @@ function _clean_function_arguments!(warning, v, fun, setting, default)
     if getfield(v, fun) ≠ :default
         if _is_callable(getfield(v, fun))
             if getfield(v, setting) ≠ default
-                warning *= "Both `$setting` and `$fun` were set; ignoring `$setting`. "
+                warning *=
+                    "Both `$setting` and `$fun` were set; " * "using `$setting=$default`. "
                 setfield!(v, setting, default)
             end
         else
-            warning *= "Invalid `$fun`; using `$fun=:default`"
+            warning *= "Invalid `$fun`; using `$fun=:default`. "
             setfield!(v, fun, :default)
         end
     end
@@ -96,23 +116,35 @@ end
 
 function MMI.clean!(v::PersistenceImageVectorizer)
     warning = ""
-    warning = _clean_function_arguments!(warning, v, :distribution, :sigma, -1)
+    warning = _clean_function_arguments!(warning, v, :distribution, :sigma, -1.0)
     if v.sigma ≤ 0 && v.sigma ≠ -1
-        warning *= "`sigma` must be positive or -1; using `sigma=-1`."
-        v.sigma = 0.0
+        warning *= "`sigma` must be positive or -1; using `sigma=-1`. "
+        v.sigma = -1
     end
 
     warning = _clean_function_arguments!(warning, v, :weight, :slope_end, 1.0)
     if !(0 < v.slope_end ≤ 1)
-        warning *= "`0 < slope_end ≤ 1` does not hold; using `slope_end=1`"
+        warning *= "`0 < slope_end ≤ 1` does not hold; using `slope_end=1`. "
         v.slope_end = 1.0
+    end
+    if (v.width ≤ 0)
+        warning *= "`width` must be positive; using `width=5`. "
+        v.width = 5
+    end
+    if (v.height ≤ 0)
+        warning *= "`height` must be positive; using `height=5`. "
+        v.height = 5
+    end
+    if (v.margin < 0)
+        warning *= "`margin` must be non-negative; using `margin=0.1`. "
+        v.margin = 0.1
     end
     return warning
 end
 
 _output_size(v::PersistenceImageVectorizer) = v.width * v.height
 
-function _image(v::PersistenceImageVectorizer, diagrams)
+function _vectorizer(v::PersistenceImageVectorizer, diagrams)
     if v.distribution == :default
         distribution = nothing
         sigma = v.sigma == -1 ? nothing : v.sigma
@@ -134,25 +166,9 @@ function _image(v::PersistenceImageVectorizer, diagrams)
         sigma=sigma,
         weight=weight,
         slope_end=slope_end,
+        margin=v.margin,
+        zero_start=v.zero_start,
     )
-end
-
-function MMI.fit(v::PersistenceImageVectorizer, ::Int, X)
-    images = map(Tables.columnnames(X)) do col
-        col => _image(v, vec(Tables.getcolumn(X, col)))
-    end
-    return (images, nothing, NamedTuple())
-end
-
-abstract type AbstractCurveVectorizer <: AbstractVectorizer end
-
-_output_size(v::AbstractCurveVectorizer) = v.length
-
-function MMI.fit(v::AbstractCurveVectorizer, ::Int, X)
-    curves = map(Tables.columnnames(X)) do col
-        col => _curve(v, vec(Tables.getcolumn(X, col)))
-    end
-    return (curves, nothing, NamedTuple())
 end
 
 """
@@ -172,7 +188,7 @@ a column.
   is set.
 
 * `curve::Symbol = :custom`: The type of curve used. Available options are `:custom`,
-  `:betti_curve`, `:silhuette`, `:life`, `:midlife`, `:life_entropy`, `:midlife_entropy`,
+  `:betti`, `:silhuette`, `:life`, `:midlife`, `:life_entropy`, `:midlife_entropy`,
   and `:pd_thresholding`.
 
 * `integrate::Bool = true`: If set to `true`, the curve is integrated. If set to `false`,
@@ -195,7 +211,7 @@ a column.
 * [`PDThresholding`](@ref)
 
 """
-mutable struct PersistenceCurveVectorizer <: AbstractCurveVectorizer
+mutable struct PersistenceCurveVectorizer <: AbstractVectorizer
     fun::Function
     stat::Function
     curve::Symbol
@@ -210,12 +226,25 @@ function PersistenceCurveVectorizer(;
     return PersistenceCurveVectorizer(fun, stat, curve, integrate, normalize, length)
 end
 
+_output_size(v::PersistenceCurveVectorizer) = v.length
+
+function _vectorizer(v::PersistenceCurveVectorizer, diagrams)
+    return PersistenceCurve(
+        v.fun,
+        v.stat,
+        diagrams;
+        length=v.length,
+        integrate=v.integrate,
+        normalize=v.normalize,
+    )
+end
+
 function MMI.clean!(v::PersistenceCurveVectorizer)
     warning = ""
     if v.curve == :custom
         fun = v.fun
         stat = v.stat
-    elseif v.curve == :betti_curve
+    elseif v.curve == :betti
         fun = always_one
         stat = sum
     elseif v.curve == :silhuette
@@ -237,36 +266,36 @@ function MMI.clean!(v::PersistenceCurveVectorizer)
         fun = thresholding
         stat = sum
     else
-        warning *= "Unrecognized curve $(v.curve); using default :custom. "
+        warning *= "Unrecognized curve `$(v.curve)`; using `curve=:custom`. "
+        v.curve = :custom
+        fun = v.fun
+        stat = v.stat
     end
     if v.curve ≠ :custom && v.fun ≢ always_one && v.fun ≢ fun
-        warning *= "Both curve and fun were set; using fun=$fun. "
+        warning *= "Both `curve` and `fun` were set; using `fun=$fun`. "
     end
     if v.curve ≠ :custom && v.stat ≢ always_one && v.stat ≢ stat
-        warning *= "Both curve and stat were set; using stat=$stat. "
+        warning *= "Both `curve` and `stat` were set; using `stat=$stat`. "
     end
     v.fun = fun
     v.stat = stat
     if v.normalize && v.curve == :silhuette
-        warning *= "Normalizing :silhuette is not supported; using normalize=false. "
+        warning *=
+            "Normalizing `curve=:silhuette` is not supported; " *
+            "using `normalize=false`. "
         v.normalize = false
     end
-    if v.length < 1
-        warning *= "Non-positive length given; using length=5. "
+    if v.normalize && v.curve == :pd_thresholding
+        warning *=
+            "Normalizing `curve=:pd_thresholding` is not supported; " *
+            "using `normalize=false`. "
+        v.normalize = false
+    end
+    if v.length ≤ 0
+        warning *= "`length` must be positive; using `length=5`. "
         v.length = 5
     end
     return warning
-end
-
-function _curve(v::PersistenceCurveVectorizer, diagrams)
-    return PersistenceCurve(
-        v.fun,
-        v.stat,
-        diagrams;
-        length=v.length,
-        integrate=v.integrate,
-        normalize=v.normalize,
-    )
 end
 
 """
@@ -289,15 +318,32 @@ to a column.
 * [`Landscape`](@ref)
 
 """
-MMI.@mlj_model mutable struct PersistenceLandscapeVectorizer <: AbstractCurveVectorizer
-    n_landscapes::Int = 1::(_ > 0)
-    length::Int = 5::(_ > 0)
+mutable struct PersistenceLandscapeVectorizer <: AbstractVectorizer
+    n_landscapes::Int
+    length::Int
+end
+
+function PersistenceLandscapeVectorizer(; n_landscapes=1, length=10)
+    return PersistenceLandscapeVectorizer(n_landscapes, length)
 end
 
 _output_size(v::PersistenceLandscapeVectorizer) = v.n_landscapes * v.length
 
-function _curve(v::PersistenceLandscapeVectorizer, diagrams)
+function _vectorizer(v::PersistenceLandscapeVectorizer, diagrams)
     return Landscapes(v.n_landscapes, diagrams; length=v.length)
+end
+
+function MMI.clean!(v::PersistenceLandscapeVectorizer)
+    warning = ""
+    if v.length ≤ 0
+        warning *= "`length` must be positive; using `length=10`. "
+        v.length = 10
+    end
+    if v.n_landscapes ≤ 0
+        warning *= "`n_landscapes` must be positive; using `n_landscapes=1`. "
+        v.n_landscapes = 1
+    end
+    return warning
 end
 
 MMI.metadata_pkg.(
