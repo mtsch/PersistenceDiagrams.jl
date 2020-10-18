@@ -171,8 +171,9 @@ function PersistenceImage(
     xsize, ysize = length(size) == 1 ? (size, size) : size
 
     finite = Iterators.filter(isfinite, Iterators.flatten(diagrams))
-    min_persistence, max_persistence = extrema(persistence, finite)
-    min_birth, max_birth = extrema(birth, finite)
+    # Generator used for Julia 1.0 compatibility.
+    min_persistence, max_persistence = extrema(persistence(int) for int in finite)
+    min_birth, max_birth = extrema(birth(int) for int in finite)
 
     if zero_start
         min_persistence = 0.0
