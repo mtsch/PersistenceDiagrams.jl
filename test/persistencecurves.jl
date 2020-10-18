@@ -77,7 +77,7 @@ end
     end
 end
 
-@testset "Landscape" begin
+@testset "Landscape(s) and Slihuette" begin
     diagram = PersistenceDiagram([(3, 9), (4, 6), (5, 11)])
 
     @testset "(k + 1)-th landscape is below the k-th landscape" begin
@@ -101,6 +101,8 @@ end
             scape = Landscape(i, 0, 12; length=12)
             @test result[:, i] == scape(diagram)
         end
+
+        @test sprint(show, scapes) == "Landscapes(4, 0.0, 12.0; length=12)"
     end
 
     @testset "a silhuette is equivalent to the sum of landscapes" begin
@@ -110,6 +112,9 @@ end
         end
         @test Silhuette(0, 12; length=24)(diagram) == scape_res
     end
+
+    @test_throws ArgumentError Landscape(-1, 0, 12)
+    @test_throws ArgumentError Landscapes(-1, 0, 12)
 end
 
 @testset "sum-based time independent curves" begin

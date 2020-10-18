@@ -32,8 +32,8 @@ mapped to a column.
   diagram. Can be a function, a callable object, or :default. When set to `:default`, a
   binormal distribution is used.
 
-* `sigma::Float64 = 1.0`: the width of the gaussian distribution. Only applicable when
-  `distribution=:default`.
+* `sigma::Float64 = -1`: the width of the gaussian distribution. Only applicable when
+  `distribution=:default`. If set to -1, its value is learned from data.
 
 * `weight::Any = :default`: the weighting function. Can be a function, a callable object, or
   :default. When set to `:default`, a piecewise linear function is used. To make this method
@@ -61,7 +61,7 @@ mutable struct PersistenceImageVectorizer <: AbstractVectorizer
 end
 # TODO: replace with Base.@kwdef when 1.6 becomes LTS
 function PersistenceImageVectorizer(;
-    distribution=:default, sigma=1.0, weight=:default, slope_end=1.0, width=3, height=3
+    distribution=:default, sigma=nothing, weight=:default, slope_end=1.0, width=3, height=3
 )
     return PersistenceImageVectorizer(distribution, sigma, weight, slope_end, width, height)
 end
@@ -79,7 +79,7 @@ function _is_callable(fun)
     end
 end
 
-function _clean_function_arguments!(warning, v, fun, setting, default=1.0)
+function _clean_function_arguments!(warning, v, fun, setting, default)
     if getfield(v, fun) ≠ :default
         if _is_callable(getfield(v, fun))
             if getfield(v, setting) ≠ default
@@ -96,10 +96,10 @@ end
 
 function MMI.clean!(v::PersistenceImageVectorizer)
     warning = ""
-    warning = _clean_function_arguments!(warning, v, :distribution, :sigma, 1.0)
-    if v.sigma ≤ 0
-        warning *= "`sigma` must be positive; using `sigma=1`."
-        v.sigma = 1.0
+    warning = _clean_function_arguments!(warning, v, :distribution, :sigma, -1)
+    if v.sigma ≤ 0 && v.sigma ≠ -1
+        warning *= "`sigma` must be positive or -1; using `sigma=-1`."
+        v.sigma = 0.0
     end
 
     warning = _clean_function_arguments!(warning, v, :weight, :slope_end, 1.0)
@@ -115,7 +115,7 @@ _output_size(v::PersistenceImageVectorizer) = v.width * v.height
 function _image(v::PersistenceImageVectorizer, diagrams)
     if v.distribution == :default
         distribution = nothing
-        sigma = v.sigma
+        sigma = v.sigma == -1 ? nothing : v.sigma
     else
         distribution = v.distribution
         sigma = nothing
