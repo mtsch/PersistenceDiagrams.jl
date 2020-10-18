@@ -15,19 +15,6 @@ using PersistenceDiagrams
             @test count == len
         end
 
-        @testset "indexing" begin
-            @test curve[firstindex(curve)] == Float64(curve.start + curve.step / 2)
-            @test curve[end] == Float64(curve.stop - curve.step / 2)
-            @test length(curve) == len
-            @test eachindex(curve) == 1:len
-            @test length([b for b in curve]) == len
-            @test_throws BoundsError curve[0]
-            @test_throws BoundsError curve[len + 1]
-
-            i1, i2 = curve[1:2]
-            @test i2 - i1 ≈ Float64(curve.step)
-        end
-
         @testset "show" begin
             @test sprint(show, curve) ==
                   "PersistenceCurve(identity, sum, $(Float64(start)), $(Float64(stop)); " *
@@ -43,7 +30,7 @@ using PersistenceDiagrams
             bc = PersistenceCurve((_...) -> 1.0, sum, [diagram_1, diagram_2])
             @test bc.start == 0
             @test bc.stop == Float64(2 + bc.step)
-            @test length(bc) == 10
+            @test bc.length == 10
             @test length(bc(diagram_1)) == 10
             @test length(bc(diagram_2)) == 10
         end
@@ -53,7 +40,7 @@ using PersistenceDiagrams
             bc = PersistenceCurve((_...) -> 1.0, sum, finite)
             @test bc.start == 0
             @test bc.stop == 1.5
-            @test length(bc) == 10
+            @test bc.length == 10
             @test length(bc(diagram_1)) == 10
             @test length(bc(diagram_2)) == 10
             @test all(iszero(bc(diagram_2)))
@@ -82,7 +69,7 @@ end
                 bc = BettiCurve([diagram_1]; length=len)
                 @test bc(diagram_1)[end] == 1
                 @test bc(diagram_1)[end - 1] == 2
-                @test length(bc) == len
+                @test bc.length == len
                 @test length(bc(diagram_1)) == len
                 @test length(bc(diagram_2)) == len
             end
@@ -105,10 +92,16 @@ end
         scape = Landscape(4, 0, 12; length=12)
         @test all(iszero, scape(diagram))
     end
-end
 
-@testset "Silhuette" begin
-    diagram = PersistenceDiagram([(3, 9), (4, 6), (5, 11)])
+    @testset "columns in Landscapes are equal to Landscape" begin
+        scapes = Landscapes(4, 0, 12; length=12)
+        result = scapes(diagram)
+        @test size(result) == (12, 4)
+        for i in 1:4
+            scape = Landscape(i, 0, 12; length=12)
+            @test result[:, i] == scape(diagram)
+        end
+    end
 
     @testset "a silhuette is equivalent to the sum of landscapes" begin
         scape_res = zeros(24)
@@ -175,13 +168,14 @@ end
         @testset "$(nameof(constructor))" begin
             curve_reg = constructor([diagram])
             curve_norm = constructor([diagram]; normalize=true)
-            @testset "normalization overriding" begin
-                @test curve_reg(diagram; normalize=true) == curve_norm(diagram)
-                @test curve_norm(diagram; normalize=false) == curve_reg(diagram)
-            end
             @testset "all values in normalized curve are below 1" begin
                 @test all(curve_norm(diagram) .≤ 1)
             end
+        end
+    end
+    for constructor in (Landscape, Landscapes, Silhuette, PDThresholding)
+        @testset "$(nameof(constructor))" begin
+            @test_throws MethodError constructor([diagram]; normalize=true)
         end
     end
 end

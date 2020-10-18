@@ -120,94 +120,88 @@ _nameof(::T) where {T} = nameof(T)
 function Base.show(io::IO, curve::PersistenceCurve)
     fname = _nameof(curve.fun)
     sname = _nameof(curve.stat)
+    length = curve.length
+    normalize = curve.normalize
+    integrate = curve.integrate
     return print(
         io,
         "PersistenceCurve(",
         join((fname, sname, string(curve.start), string(curve.stop)), ", "),
-        "; length=",
-        curve.length,
-        ", normalize=",
-        curve.normalize,
-        ", integrate=",
-        curve.integrate,
-        ")",
+        "; length=$length, normalize=$normalize, integrate=$integrate)",
     )
 end
 
-Base.firstindex(bc::PersistenceCurve) = 1
-Base.lastindex(bc::PersistenceCurve) = bc.length
-Base.length(bc::PersistenceCurve) = bc.length
-Base.eachindex(bc::PersistenceCurve) = Base.OneTo(bc.length)
-function Base.getindex(bc::PersistenceCurve, i::Integer)
-    0 < i ≤ bc.length || throw(BoundsError(bc, i))
-    return Float64(bc.start + i * bc.step - bc.step / 2)
-end
-function Base.getindex(bc::PersistenceCurve, is)
-    return [bc[i] for i in is]
+"""
+    _time_at(curve, i)
+
+Get the time at index `i`.
+"""
+function _time_at(curve, i)
+    0 < i ≤ curve.length || throw(BoundsError(curve, i))
+    return Float64(curve.start + i * curve.step - curve.step / 2)
 end
 
-function Base.iterate(bc::PersistenceCurve, i=1)
-    if i ≤ length(bc)
-        return bc[i], i + 1
-    else
-        return nothing
-    end
-end
+"""
+    _value_at!(buffer, diagram, fun, stat, time)
 
-function _value_at!(buff, f, s, diag, t)
-    empty!(buff)
-    for int in diag
-        if birth(int) ≤ t < death(int)
-            val = f(int, diag, t)
+Collect contributions to curve from all intervals in `buffer` and `stat` them.
+"""
+function _value_at!(buffer, diagram, fun, stat, time)
+    empty!(buffer)
+    for interval in diagram
+        if birth(interval) ≤ time < death(interval)
+            val = fun(interval, diagram, time)
             if isfinite(val)
-                push!(buff, val)
+                push!(buffer, val)
             else
-                @warn "Skipping infinite intervals" maxlog = 1
+                @warn "Skipping infinite intervalervals" maxlog = 1
             end
         end
     end
-    if isempty(buff)
+    if isempty(buffer)
         return 0.0
     else
-        return s(buff)
+        return stat(buffer)
     end
 end
 
-function (curve::PersistenceCurve)(
-    diag; integrate=curve.integrate, normalize=curve.normalize
-)
-    result = integrate ? _integrate(curve, diag) : _sample(curve, diag)
-    if normalize
-        norm = curve.stat([curve.fun(int, diag, nothing) for int in diag])
+function (curve::PersistenceCurve)(diagram)
+    result = curve.integrate ? _integrate(curve, diagram) : _sample(curve, diagram)
+    if curve.normalize
+        norm = curve.stat([curve.fun(int, diagram, nothing) for int in diagram])
         return result ./ norm
     else
         return result
     end
 end
 
-function _sample(curve, diag)
+function _sample(curve, diagram)
     buff = Float64[]
-    return map(eachindex(curve)) do i
-        _value_at!(buff, curve.fun, curve.stat, diag, curve[i])
+    return map(1:(curve.length)) do i
+        _value_at!(buff, diagram, curve.fun, curve.stat, _time_at(curve, i))
     end
 end
 
-function _integrate(curve, diag)
-    ts = unique!(sort!(collect(Iterators.flatten(diag)); rev=true))
+function _integrate(curve, diagram)
+    # The idea here is that short intervals that evaluate to zero on all points should still
+    # contribute something. This is done by moving to the right on each event (time point or
+    # birth/death), and then summing the chunks of each interval.
+
+    ts = unique!(sort!(collect(Iterators.flatten(diagram)); rev=true))
     pushfirst!(ts, Inf)
-    buff = Float64[]
+    buffer = Float64[]
     lo_exact = curve.start
     hi_exact = curve.start + curve.step
-    return map(eachindex(curve)) do i
+    return map(1:(curve.length)) do i
         lo, hi = Float64(lo_exact), Float64(hi_exact)
         t1, t2 = lo, min(hi, last(ts))
         δ = (t2 - t1) / (hi - lo)
-        result = _value_at!(buff, curve.fun, curve.stat, diag, (t1 + t2) / 2) * δ
+        result = _value_at!(buffer, diagram, curve.fun, curve.stat, (t1 + t2) / 2) * δ
         while !isempty(ts) && last(ts) < Float64(hi)
             t1 = pop!(ts)
             t2 = min(last(ts), Float64(hi))
             δ = (t2 - t1) / (hi - lo)
-            result += _value_at!(buff, curve.fun, curve.stat, diag, (t1 + t2) / 2) * δ
+            result += _value_at!(buffer, diagram, curve.fun, curve.stat, (t1 + t2) / 2) * δ
         end
         lo_exact += curve.step
         hi_exact += curve.step
@@ -431,9 +425,7 @@ function Base.show(io::IO, ls::Landscapes)
         io,
         "Landscapes(",
         join((length(ls.landscapes), string(l.start), string(l.stop)), ", "),
-        "; length=",
-        l.length,
-        ")",
+        "; length=$(l.length))",
     )
 end
 
