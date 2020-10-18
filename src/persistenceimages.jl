@@ -11,11 +11,14 @@ function (dwf::DefaultWeightingFunction)(_, y)
     end
 end
 
+const inv2π = 1.0 / (2π)
+
 struct Binormal
     sigma::Float64
 end
 function (bi::Binormal)(x, y)
-    return exp(-(x^2 + y^2) / (2bi.sigma^2)) / (bi.sigma^2 * 2π)
+    invsigma2 = 1 / abs2(bi.sigma)
+    return inv2π * invsigma2 * exp(-(abs2(x) + abs2(y)) * 0.5 * invsigma2)
 end
 
 """
@@ -37,30 +40,36 @@ Infinite intervals in the diagram are ignored.
 
 # Constructors
 
-* `PersistenceImage(ylims, xlims; size=5, kwargs...)`
-* `PersistenceImage(diagrams; size=5, kwargs...)`
+    PersistenceImage(ylims, xlims; kwargs...)
 
-## Arguments
+Create an image ranging from `ylims[1]` to `ylims[2]` in the ``y`` direction and
+equivalently for the ``x`` direction.
 
-* `ylims`, `xlims`: Limits of the square on which the image is created, both 2-tuples. Note
-  that y comes first as this is the way arrays are indexed.
-* `diagrams`: Collection of persistence diagrams. This constructor sets `ylims` and `xlims`
-  according to minimum and maximum birth time and persistence time. Sets `slope_end` to
-  maximum persistence time.
+    PersistenceImage(diagrams; zero_start=true, margin=0.1, kwargs...)
+
+Learn the ``x`` and ``y`` ranges from diagrams, ensuring all diagrams will fully fit in the
+image. Limits are increased by the `margin`. If `zero_start` is true, set the minimum `y`
+value to 0.
 
 ## Keyword Arguments
 
-* `distribution`: A function or callable object used to smear each interval in diagram.  Has
-  to be callable with two `Float64`s as input and should return a `Float64`. Defaults to a
-  normal distribution with `sigma` equal to 1.
-* `sigma`: The width of the gaussian distribution. Only applicable when `distribution` is
-  unset.
-* `weight`: A function or callable object used as the weighting function. Has to be callable
-  with two `Float64`s as input and should return a `Float64`. Should equal 0.0 for x=0, but
-  this is not enforced.
-* `slope_end`: the ``y`` value at which the default weight function stops increasing.
 * `size`: integer or tuple of two integers. Determines the size of the array containing the
   image. Defaults to 5.
+
+* `distribution`: A function or callable object used to smear each interval in diagram.  Has
+  to be callable with two `Float64`s as input and should return a `Float64`. Defaults to a
+  normal distribution.
+
+* `sigma`: The width of the normal distribution mentioned above. Only applicable when
+  `distribution` is unset. Defaults to twice the size of each pixel.
+
+* `weight`: A function or callable object used as the weighting function. Has to be callable
+  with two `Float64`s as input and should return a `Float64`. Should equal 0.0 for x=0, but
+  this is not enforced. Defaults to function that is zero at ``y=0``, and increases linearly
+  to 1 until `slope_end` is reached.
+
+* `slope_end`: the relative ``y`` value at which the default weight function stops
+  increasing. Defaults to 1.0.
 
 # Example
 
@@ -71,17 +80,18 @@ julia> diag_2 = PersistenceDiagram([(1, 2), (1, 1.5)]);
 
 julia> image = PersistenceImage([diag_1, diag_2])
 5×5 PersistenceImage(
-  distribution = PersistenceDiagrams.Binormal(1.0),
-  weight = PersistenceDiagrams.DefaultWeightingFunction(1.5),
+  distribution = PersistenceDiagrams.Binormal(0.5499999999999999),
+  weight = PersistenceDiagrams.DefaultWeightingFunction(1.65),
 )
 
 julia> image(diag_1)
 5×5 Array{Float64,2}:
- 0.266562  0.269891  0.264744  0.251762  0.232227
- 0.294472  0.297554  0.291244  0.276314  0.254244
- 0.31342   0.316057  0.308664  0.292136  0.268117
- 0.32141   0.323446  0.315164  0.297554  0.272373
- 0.31758   0.318928  0.310047  0.29199   0.266562
+ 0.156707  0.164263  0.160452  0.149968  0.0717212
+ 0.344223  0.355089  0.338991  0.308795  0.145709
+ 0.571181  0.577527  0.535069  0.47036   0.217661
+ 0.723147  0.714873  0.639138  0.536823  0.241904
+ 0.381499  0.372649  0.32665   0.267067  0.118359
+
 ```
 
 # Reference
@@ -106,23 +116,35 @@ function PersistenceImage(
     weight=nothing,
     slope_end=nothing,
 )
+    if !issorted(xs) || !issorted(ys)
+        throw(ArgumentError("`xs` and `ys` must be increasing"))
+    end
     if !isnothing(sigma) && !isnothing(distribution)
-        throw(ArgumentError("`sigma` and `distribution` can't be specified at the same time"))
+        throw(ArgumentError("`sigma` and `distribution` can't be set at the same time"))
     elseif !isnothing(sigma)
-        distribution = Binormal(sigma)
+        if sigma > 0
+            distribution = Binormal(sigma)
+        else
+            throw(ArgumentError("`sigma` must be positive"))
+        end
     elseif !isnothing(distribution)
         distribution = distribution
     else
-        distribution = Binormal(1)
+        w = max((last(ys) - first(ys)) / length(ys), (last(xs) - first(xs)) / length(xs))
+        distribution = Binormal(2 * w)
     end
     if !isnothing(weight) && !isnothing(slope_end)
-        throw(ArgumentError("`weight` and `slope_end` can't be specified at the same time"))
+        throw(ArgumentError("`weight` and `slope_end` can't be set at the same time"))
     elseif !isnothing(weight)
         weight = weight
     elseif !isnothing(slope_end)
-        weight = DefaultWeightingFunction(slope_end)
+        if 0 < slope_end ≤ 1
+            weight = DefaultWeightingFunction(slope_end * last(ys))
+        else
+            throw(ArgumentError("`0 < slope_end ≤ 1` does not hold"))
+        end
     else
-        weight = DefaultWeightingFunction(1)
+        weight = DefaultWeightingFunction(last(ys))
     end
 
     return PersistenceImage(ys, xs, distribution, weight)
@@ -134,22 +156,41 @@ function PersistenceImage(ylims::Tuple, xlims::Tuple; size=5, kwargs...)
 
     return PersistenceImage(ys, xs; kwargs...)
 end
-function PersistenceImage(diagrams; slope_end=1, kwargs...)
-    min_persistence = minimum(
-        persistence(int) for int in Iterators.flatten(diagrams) if isfinite(int)
-    )
-    max_persistence = maximum(
-        persistence(int) for int in Iterators.flatten(diagrams) if isfinite(int)
-    )
-    min_birth = minimum(birth(int) for int in Iterators.flatten(diagrams) if isfinite(int))
-    max_birth = maximum(birth(int) for int in Iterators.flatten(diagrams) if isfinite(int))
+function PersistenceImage(
+    diagrams;
+    zero_start=true,
+    margin=0.1,
+    size=5,
+    sigma=nothing,
+    distribution=nothing,
+    kwargs...,
+)
+    if margin < 0
+        throw(ArgumentError("`margin` must be non-negative"))
+    end
+    xsize, ysize = length(size) == 1 ? (size, size) : size
+
+    finite = Iterators.filter(isfinite, Iterators.flatten(diagrams))
+    min_persistence, max_persistence = extrema(persistence, finite)
+    min_birth, max_birth = extrema(birth, finite)
+
+    if zero_start
+        min_persistence = 0.0
+    end
+    ywidth = max_persistence - min_persistence
+    min_persistence = max(0.0, min_persistence - margin * ywidth)
+    max_persistence = max_persistence + margin * ywidth
+
+    xwidth = max_birth - min_birth
+    min_birth = min_birth - margin * xwidth
+    max_birth = max_birth + margin * xwidth
+
     ylims = (min_persistence, max_persistence)
     xlims = (min_birth, max_birth)
-    if :weight in keys(kwargs)
-        PersistenceImage(ylims, xlims; kwargs...)
-    else
-        PersistenceImage(ylims, xlims; slope_end=slope_end * max_persistence, kwargs...)
-    end
+
+    return PersistenceImage(
+        ylims, xlims; size=(xsize, ysize), sigma=sigma, distribution=distribution, kwargs...
+    )
 end
 
 function Base.show(io::IO, pi::PersistenceImage)
@@ -163,30 +204,28 @@ function Base.show(io::IO, ::MIME"text/plain", pi::PersistenceImage)
 end
 
 function (pi::PersistenceImage)(diagram::PersistenceDiagram)
-    diagram = filter(isfinite, diagram)
     n = length(pi.ys) - 1
     m = length(pi.xs) - 1
     result = zeros(n, m)
+    distribution_buffer = zeros(n + 1, m + 1)
 
-    @inbounds for i in 1:m, j in 1:n
-        for interval in diagram
-            x_lo = pi.xs[i]
-            x_hi = pi.xs[i + 1]
-            y_lo = pi.ys[j]
-            y_hi = pi.ys[j + 1]
-            b = birth(interval)
-            p = persistence(interval)
-            w = pi.weight(b, p)
+    @inbounds for interval in Iterators.filter(isfinite, diagram)
+        b = birth(interval)
+        p = persistence(interval)
+        w = pi.weight(b, p)
 
-            pixel =
-                (
-                    pi.distribution(x_lo - b, y_lo - p) * w +
-                    pi.distribution(x_lo - b, y_hi - p) * w +
-                    pi.distribution(x_hi - b, y_lo - p) * w +
-                    pi.distribution(x_hi - b, y_hi - p) * w
-                ) / 4
+        for j in 1:m, i in 1:n
+            x = pi.xs[j]
+            y = pi.ys[i]
+            distribution_buffer[i, j] = w * pi.distribution(x - b, y - p) * 0.25
+        end
 
-            result[j, i] += pixel
+        for j in 1:m, i in 1:n
+            result[i, j] +=
+                distribution_buffer[i, j] +
+                distribution_buffer[i + 1, j] +
+                distribution_buffer[i, j + 1] +
+                distribution_buffer[i + 1, j + 1]
         end
     end
     return result
