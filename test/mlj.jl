@@ -1,5 +1,6 @@
 using MLJBase
 using PersistenceDiagrams
+using PersistenceDiagrams.MLJPersistenceDiagrams
 using Tables
 using Test
 
