@@ -1,3 +1,5 @@
+# TODO: support manually setting ranges?
+
 import MLJModelInterface
 const MMI = MLJModelInterface
 
