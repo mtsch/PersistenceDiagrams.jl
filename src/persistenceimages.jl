@@ -49,7 +49,8 @@ equivalently for the ``x`` direction.
 
 Learn the ``x`` and ``y`` ranges from diagrams, ensuring all diagrams will fully fit in the
 image. Limits are increased by the `margin`. If `zero_start` is true, set the minimum `y`
-value to 0.
+value to 0. If all intervals in diagrams have the same birth (e.g. in the zeroth dimension),
+a single column image is produced.
 
 ## Keyword Arguments
 
@@ -168,12 +169,15 @@ function PersistenceImage(
     if margin < 0
         throw(ArgumentError("`margin` must be non-negative"))
     end
-    xsize, ysize = length(size) == 1 ? (size, size) : size
+    ysize, xsize = length(size) == 1 ? (size, size) : size
 
     finite = Iterators.filter(isfinite, Iterators.flatten(diagrams))
     # Generator used for Julia 1.0 compatibility.
     min_persistence, max_persistence = extrema(persistence(int) for int in finite)
     min_birth, max_birth = extrema(birth(int) for int in finite)
+    if min_birth == max_birth
+        xsize = 1
+    end
 
     if zero_start
         min_persistence = 0.0
@@ -190,9 +194,11 @@ function PersistenceImage(
     xlims = (min_birth, max_birth)
 
     return PersistenceImage(
-        ylims, xlims; size=(xsize, ysize), sigma=sigma, distribution=distribution, kwargs...
+        ylims, xlims; size=(ysize, xsize), sigma=sigma, distribution=distribution, kwargs...
     )
 end
+
+output_size(pi::PersistenceImage) = (length(pi.ys) - 1) * (length(pi.xs) - 1)
 
 function Base.show(io::IO, pi::PersistenceImage)
     return print(io, "$(length(pi.ys) - 1)×$(length(pi.xs) - 1) PersistenceImage")
@@ -215,7 +221,7 @@ function (pi::PersistenceImage)(diagram::PersistenceDiagram)
         p = persistence(interval)
         w = pi.weight(b, p)
 
-        for j in 1:m, i in 1:n
+        for j in 1:m+1, i in 1:n+1
             x = pi.xs[j]
             y = pi.ys[i]
             distribution_buffer[i, j] = w * pi.distribution(x - b, y - p) * 0.25

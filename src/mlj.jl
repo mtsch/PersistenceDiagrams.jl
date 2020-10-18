@@ -5,23 +5,25 @@ MMI.ScientificTypes.scitype(::PersistenceDiagram) = PersistenceDiagram
 
 abstract type AbstractVectorizer <: MMI.Unsupervised end
 
-function MMI.fit(v::AbstractVectorizer, ::Int, X)
+function MMI.fit(model::AbstractVectorizer, ::Int, X)
     vectorizers = map(Tables.columnnames(X)) do col
-        col => _vectorizer(v, vec(Tables.getcolumn(X, col)))
+        col => _vectorizer(model, vec(Tables.getcolumn(X, col)))
     end
     return (vectorizers, nothing, NamedTuple())
 end
 
-function MMI.transform(vectorizer::AbstractVectorizer, vectorizers, X)
-    # TODO: drop mapreduce
-    matrix = mapreduce(vcat, Tables.rows(X)) do row
-        mapreduce(hcat, vectorizers) do (k, v)
-            transpose(vec(v(Tables.getcolumn(row, k))))
+function MMI.transform(model::AbstractVectorizer, vectorizers, X)
+    matrix = zeros(MMI.nrows(X), sum(output_size(last(v)) for v in vectorizers))
+    for (i, row) in enumerate(Tables.rows(X))
+        matrix[i, :] .= mapreduce(vcat, vectorizers) do (k, v)
+            vec(v(Tables.getcolumn(row, k)))
         end
     end
-    names = [
-        Symbol(k, :_, i) for k in first.(vectorizers) for i in 1:_output_size(vectorizer)
-    ]
+
+    names = Symbol[]
+    for (k, v) in vectorizers
+        append!(names, Symbol(k, :_, i) for i in 1:output_size(v))
+    end
     return MMI.table(matrix; names=names)
 end
 
@@ -98,76 +100,74 @@ function _is_callable(fun)
     end
 end
 
-function _clean_function_arguments!(warning, v, fun, setting, default)
-    if getfield(v, fun) ≠ :default
-        if _is_callable(getfield(v, fun))
-            if getfield(v, setting) ≠ default
+function _clean_function_arguments!(warning, model, fun, setting, default)
+    if getfield(model, fun) ≠ :default
+        if _is_callable(getfield(model, fun))
+            if getfield(model, setting) ≠ default
                 warning *=
                     "Both `$setting` and `$fun` were set; " * "using `$setting=$default`. "
-                setfield!(v, setting, default)
+                setfield!(model, setting, default)
             end
         else
             warning *= "Invalid `$fun`; using `$fun=:default`. "
-            setfield!(v, fun, :default)
+            setfield!(model, fun, :default)
         end
     end
     return warning
 end
 
-function MMI.clean!(v::PersistenceImageVectorizer)
+function MMI.clean!(model::PersistenceImageVectorizer)
     warning = ""
-    warning = _clean_function_arguments!(warning, v, :distribution, :sigma, -1.0)
-    if v.sigma ≤ 0 && v.sigma ≠ -1
+    warning = _clean_function_arguments!(warning, model, :distribution, :sigma, -1.0)
+    if model.sigma ≤ 0 && model.sigma ≠ -1
         warning *= "`sigma` must be positive or -1; using `sigma=-1`. "
-        v.sigma = -1
+        model.sigma = -1
     end
 
-    warning = _clean_function_arguments!(warning, v, :weight, :slope_end, 1.0)
-    if !(0 < v.slope_end ≤ 1)
+    warning = _clean_function_arguments!(warning, model, :weight, :slope_end, 1.0)
+    if !(0 < model.slope_end ≤ 1)
         warning *= "`0 < slope_end ≤ 1` does not hold; using `slope_end=1`. "
-        v.slope_end = 1.0
+        model.slope_end = 1.0
     end
-    if (v.width ≤ 0)
+    if (model.width ≤ 0)
         warning *= "`width` must be positive; using `width=5`. "
-        v.width = 5
+        model.width = 5
     end
-    if (v.height ≤ 0)
+    if (model.height ≤ 0)
         warning *= "`height` must be positive; using `height=5`. "
-        v.height = 5
+        model.height = 5
     end
-    if (v.margin < 0)
+    if (model.margin < 0)
         warning *= "`margin` must be non-negative; using `margin=0.1`. "
-        v.margin = 0.1
+        model.margin = 0.1
     end
     return warning
 end
 
-_output_size(v::PersistenceImageVectorizer) = v.width * v.height
-
-function _vectorizer(v::PersistenceImageVectorizer, diagrams)
-    if v.distribution == :default
+function _vectorizer(model::PersistenceImageVectorizer, diagrams)
+    if model.distribution == :default
         distribution = nothing
-        sigma = v.sigma == -1 ? nothing : v.sigma
+        sigma = model.sigma == -1 ? nothing : model.sigma
     else
-        distribution = v.distribution
+        distribution = model.distribution
         sigma = nothing
     end
-    if v.weight == :default
+    if model.weight == :default
         weight = nothing
-        slope_end = v.slope_end
+        slope_end = model.slope_end
     else
-        weight = v.weight
+        weight = model.weight
         slope_end = nothing
     end
     return PersistenceImage(
         diagrams;
-        size=(v.height, v.width),
+        size=(model.height, model.width),
         distribution=distribution,
         sigma=sigma,
         weight=weight,
         slope_end=slope_end,
-        margin=v.margin,
-        zero_start=v.zero_start,
+        margin=model.margin,
+        zero_start=model.zero_start,
     )
 end
 
@@ -226,74 +226,72 @@ function PersistenceCurveVectorizer(;
     return PersistenceCurveVectorizer(fun, stat, curve, integrate, normalize, length)
 end
 
-_output_size(v::PersistenceCurveVectorizer) = v.length
-
-function _vectorizer(v::PersistenceCurveVectorizer, diagrams)
+function _vectorizer(model::PersistenceCurveVectorizer, diagrams)
     return PersistenceCurve(
-        v.fun,
-        v.stat,
+        model.fun,
+        model.stat,
         diagrams;
-        length=v.length,
-        integrate=v.integrate,
-        normalize=v.normalize,
+        length=model.length,
+        integrate=model.integrate,
+        normalize=model.normalize,
     )
 end
 
-function MMI.clean!(v::PersistenceCurveVectorizer)
+function MMI.clean!(model::PersistenceCurveVectorizer)
     warning = ""
-    if v.curve == :custom
-        fun = v.fun
-        stat = v.stat
-    elseif v.curve == :betti
+    if model.curve == :custom
+        fun = model.fun
+        stat = model.stat
+    elseif model.curve == :betti
         fun = always_one
         stat = sum
-    elseif v.curve == :silhuette
+    elseif model.curve == :silhuette
         fun = landscape
         stat = sum
-    elseif v.curve == :life
+    elseif model.curve == :life
         fun = life
         stat = sum
-    elseif v.curve == :midlife
+    elseif model.curve == :midlife
         fun = midlife
         stat = sum
-    elseif v.curve == :life_entropy
+    elseif model.curve == :life_entropy
         fun = life_entropy
         stat = sum
-    elseif v.curve == :midlife_entropy
+    elseif model.curve == :midlife_entropy
         fun = midlife_entropy
         stat = sum
-    elseif v.curve == :pd_thresholding
+    elseif model.curve == :pd_thresholding
         fun = thresholding
         stat = sum
     else
-        warning *= "Unrecognized curve `$(v.curve)`; using `curve=:custom`. "
-        v.curve = :custom
-        fun = v.fun
-        stat = v.stat
+        warning *= "Unrecognized curve `$(model.curve)`; using `curve=:custom`. "
+        model.curve = :custom
+        fun = model.fun
+        stat = model.stat
     end
-    if v.curve ≠ :custom && v.fun ≢ always_one && v.fun ≢ fun
+    if model.curve ≠ :custom && model.fun ≢ always_one && model.fun ≢ fun
         warning *= "Both `curve` and `fun` were set; using `fun=$fun`. "
     end
-    if v.curve ≠ :custom && v.stat ≢ always_one && v.stat ≢ stat
+    if model.curve ≠ :custom && model.stat ≢ always_one && model.stat ≢ stat
         warning *= "Both `curve` and `stat` were set; using `stat=$stat`. "
     end
-    v.fun = fun
-    v.stat = stat
-    if v.normalize && v.curve == :silhuette
+    model.fun = fun
+    model.stat = stat
+    if model.normalize && model.curve == :silhuette
         warning *=
             "Normalizing `curve=:silhuette` is not supported; " *
             "using `normalize=false`. "
-        v.normalize = false
+        model.normalize = false
     end
-    if v.normalize && v.curve == :pd_thresholding
+    if model.normalize && model.curve == :pd_thresholding
         warning *=
             "Normalizing `curve=:pd_thresholding` is not supported; " *
             "using `normalize=false`. "
-        v.normalize = false
+        model.normalize = false
     end
-    if v.length ≤ 0
+    if model.length ≤ 0
         warning *= "`length` must be positive; using `length=5`. "
-        v.length = 5
+        model.length = 5
     end
     return warning
 end
@@ -327,21 +325,19 @@ function PersistenceLandscapeVectorizer(; n_landscapes=1, length=10)
     return PersistenceLandscapeVectorizer(n_landscapes, length)
 end
 
-_output_size(v::PersistenceLandscapeVectorizer) = v.n_landscapes * v.length
-
-function _vectorizer(v::PersistenceLandscapeVectorizer, diagrams)
-    return Landscapes(v.n_landscapes, diagrams; length=v.length)
+function _vectorizer(model::PersistenceLandscapeVectorizer, diagrams)
+    return Landscapes(model.n_landscapes, diagrams; length=model.length)
 end
 
-function MMI.clean!(v::PersistenceLandscapeVectorizer)
+function MMI.clean!(model::PersistenceLandscapeVectorizer)
     warning = ""
-    if v.length ≤ 0
+    if model.length ≤ 0
         warning *= "`length` must be positive; using `length=10`. "
-        v.length = 10
+        model.length = 10
     end
-    if v.n_landscapes ≤ 0
+    if model.n_landscapes ≤ 0
         warning *= "`n_landscapes` must be positive; using `n_landscapes=1`. "
-        v.n_landscapes = 1
+        model.n_landscapes = 1
     end
     return warning
 end

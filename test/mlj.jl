@@ -53,7 +53,7 @@ end
         res = transform(mach, table)
 
         @test n_rows(res) == 2
-        @test n_cols(res) == model.width * model.height * 2
+        @test n_cols(res) == model.width * model.height + model.height
     end
 
     for faulty_kwargs in (

@@ -114,6 +114,8 @@ function PersistenceCurve(fun, stat, diagrams; length=10, integrate=true, normal
     )
 end
 
+output_size(curve::PersistenceCurve) = curve.length
+
 _nameof(f::Function) = nameof(f)
 _nameof(::T) where {T} = nameof(T)
 
@@ -418,6 +420,8 @@ struct Landscapes
         return new(landscapes)
     end
 end
+
+output_size(l::Landscapes) = output_size(l.landscapes[1]) * length(l.landscapes)
 
 function Base.show(io::IO, ls::Landscapes)
     l = first(ls.landscapes)
