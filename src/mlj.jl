@@ -40,6 +40,15 @@ end
 MMI.input_scitype(::Type{<:AbstractVectorizer}) = MMI.Table(PersistenceDiagram)
 MMI.output_scitype(::Type{<:AbstractVectorizer}) = MMI.Table(MMI.Continuous)
 
+function _clean_parameter!(m, name, predicate, default, property)
+    if predicate(getfield(m, name))
+        return ""
+    else
+        setfield!(m, name, default)
+        return "`$name` must be $property; using `$name=$default`. "
+    end
+end
+
 """
     PersistenceImageVectorizer(; kwargs...)
 
@@ -62,8 +71,8 @@ mapped to a column.
 * `slope_end::Float64 = 1.0`: the (relative) position in the diagram where the default
   weight function stops decreasing. Only applicable when `weight=:default`.
 
-* `width::Int = 3`, `height::Int = 3`: the size of the image. Note that all pixels of the
-  image will be converted to columns. For example a 3×3 image will produce 9 columns per
+* `width::Int = 10`, `height::Int = 10`: the size of the image. Note that all pixels of the
+  image will be converted to columns. For example a 3×4 image will produce 12 columns per
   dimension.
 
 # See also
@@ -110,46 +119,34 @@ function _is_callable(fun)
     end
 end
 
-function _clean_function_arguments!(warning, model, fun, setting, default)
+function _clean_function_parameter!(model, fun, setting, default)
     if getfield(model, fun) ≠ :default
         if _is_callable(getfield(model, fun))
             if getfield(model, setting) ≠ default
-                warning *=
-                    "Both `$setting` and `$fun` were set; " * "using `$setting=$default`. "
                 setfield!(model, setting, default)
+                return "Both `$setting` and `$fun` were set; using `$setting=$default`. "
             end
         else
-            warning *= "Invalid `$fun`; using `$fun=:default`. "
             setfield!(model, fun, :default)
+            return "Invalid `$fun`; using `$fun=:default`. "
         end
     end
-    return warning
+    return ""
 end
 
 function MMI.clean!(model::PersistenceImageVectorizer)
     warning = ""
-    warning = _clean_function_arguments!(warning, model, :distribution, :sigma, -1.0)
-    if model.sigma ≤ 0 && model.sigma ≠ -1
-        warning *= "`sigma` must be positive or -1; using `sigma=-1`. "
-        model.sigma = -1
-    end
-
-    warning = _clean_function_arguments!(warning, model, :weight, :slope_end, 1.0)
+    warning *= _clean_function_parameter!(model, :distribution, :sigma, -1.0)
+    warning *= _clean_function_parameter!(model, :weight, :slope_end, 1.0)
+    warning *= _clean_parameter!(model, :width, x -> x > 0, 10, "positive")
+    warning *= _clean_parameter!(model, :height, x -> x > 0, 10, "positive")
+    warning *= _clean_parameter!(model, :margin, x -> x ≥ 0, 0.1, "non-negative")
+    warning *= _clean_parameter!(
+        model, :sigma, x -> x > 0 || x == -1, -1.0, "positive or -1"
+    )
     if !(0 < model.slope_end ≤ 1)
         warning *= "`0 < slope_end ≤ 1` does not hold; using `slope_end=1`. "
         model.slope_end = 1.0
-    end
-    if (model.width ≤ 0)
-        warning *= "`width` must be positive; using `width=5`. "
-        model.width = 5
-    end
-    if (model.height ≤ 0)
-        warning *= "`height` must be positive; using `height=5`. "
-        model.height = 5
-    end
-    if (model.margin < 0)
-        warning *= "`margin` must be non-negative; using `margin=0.1`. "
-        model.margin = 0.1
     end
     return warning
 end
@@ -207,7 +204,7 @@ a column.
 * `normalize::Bool = false`: Normalize the curve by dividing all values by
   `stat(fun.(diagram))`.
 
-* `length::Int = 5`: The number of columns per dimension to output.
+* `length::Int = 10`: The number of columns per dimension to output.
 
 # See also
 
@@ -231,7 +228,7 @@ mutable struct PersistenceCurveVectorizer <: AbstractVectorizer
 end
 # TODO: replace with Base.@kwdef when 1.6 becomes LTS
 function PersistenceCurveVectorizer(;
-    fun=always_one, stat=sum, curve=:custom, integrate=true, normalize=false, length=5
+    fun=always_one, stat=sum, curve=:custom, integrate=true, normalize=false, length=10
 )
     return PersistenceCurveVectorizer(fun, stat, curve, integrate, normalize, length)
 end
@@ -299,10 +296,7 @@ function MMI.clean!(model::PersistenceCurveVectorizer)
             "using `normalize=false`. "
         model.normalize = false
     end
-    if model.length ≤ 0
-        warning *= "`length` must be positive; using `length=5`. "
-        model.length = 5
-    end
+    warning *= _clean_parameter!(model, :length, x -> x > 0, 10, "positive")
     return warning
 end
 
@@ -316,8 +310,8 @@ to a column.
 
 * `n_landscapes = 1`: use the top ``n`` landscapes.
 
-* `length = 5`: the number of columns per dimension per landscape to output. For example,
-  for `n_landscapes=3`, `length=5`, and two persistence diagrams, the vectorization will
+* `length = 10`: the number of columns per dimension per landscape to output. For example,
+  for `n_landscapes=3`, `length=10`, and two persistence diagrams, the vectorization will
   produce 30 columns.
 
 # See also
@@ -341,14 +335,8 @@ end
 
 function MMI.clean!(model::PersistenceLandscapeVectorizer)
     warning = ""
-    if model.length ≤ 0
-        warning *= "`length` must be positive; using `length=10`. "
-        model.length = 10
-    end
-    if model.n_landscapes ≤ 0
-        warning *= "`n_landscapes` must be positive; using `n_landscapes=1`. "
-        model.n_landscapes = 1
-    end
+    warning *= _clean_parameter!(model, :length, x -> x > 0, 10, "positive")
+    warning *= _clean_parameter!(model, :n_landscapes, x -> x > 0, 1, "positive")
     return warning
 end
 
