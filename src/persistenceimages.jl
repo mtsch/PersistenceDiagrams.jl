@@ -221,7 +221,7 @@ function (pi::PersistenceImage)(diagram::PersistenceDiagram)
         p = persistence(interval)
         w = pi.weight(b, p)
 
-        for j in 1:m+1, i in 1:n+1
+        for j in 1:(m + 1), i in 1:(n + 1)
             x = pi.xs[j]
             y = pi.ys[i]
             distribution_buffer[i, j] = w * pi.distribution(x - b, y - p) * 0.25

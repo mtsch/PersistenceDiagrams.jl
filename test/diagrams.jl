@@ -195,4 +195,13 @@ end
     @test df.dim isa Vector{Int}
     @test df.threshold isa Vector{Union{Float64,Missing}}
     @test nrow(df) == 5
+
+    table = Tables.columntable((dim=[0, 1], birth=[0, 0], death=[0, 0]))
+    @test_throws ArgumentError PersistenceDiagram(table)
+    table = Tables.columntable((threshold=[0, 1], birth=[0, 0], death=[0, 0]))
+    @test_throws ArgumentError PersistenceDiagram(table)
+    table = Tables.columntable((threshold=[1, 1], birth=[0, 0], death=[0, 0]))
+    diagram = PersistenceDiagram(table)
+    @test ismissing(dim(diagram))
+    @test threshold(diagram) == 1
 end

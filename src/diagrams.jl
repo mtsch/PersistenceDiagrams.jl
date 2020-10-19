@@ -65,13 +65,20 @@ function PersistenceDiagram(table)
         return PersistenceDiagram([])
     else
         firstrow = first(rows)
-        dim = firstrow.dim
-        threshold = firstrow.threshold
-        diagram = PersistenceDiagram(PersistenceInterval[]; dim=dim, threshold=threshold)
-        for row in rows
-            push!(diagram.intervals, PersistenceInterval(row.birth, row.death))
+        dim = hasproperty(firstrow, :dim) ? firstrow.dim : missing
+        threshold = hasproperty(firstrow, :threshold) ? firstrow.threshold : missing
+        intervals = map(rows) do row
+            d = hasproperty(row, :dim) ? row.dim : missing
+            t = hasproperty(row, :threshold) ? row.threshold : missing
+            if !isequal(d, dim)
+                throw(ArgumentError("different `dim`s detected. Try splitting the table first."))
+            end
+            if !isequal(t, threshold)
+                throw(ArgumentError("different `threshold`s detected. Try splitting the table first."))
+            end
+            PersistenceInterval(row.birth, row.death)
         end
-        return diagram
+        return PersistenceDiagram(intervals; dim=dim, threshold=threshold)
     end
 end
 

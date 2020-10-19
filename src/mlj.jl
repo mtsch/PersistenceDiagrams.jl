@@ -3,13 +3,21 @@
 import MLJModelInterface
 const MMI = MLJModelInterface
 
+# TODO is this ok?
 MMI.ScientificTypes.scitype(::PersistenceDiagram) = PersistenceDiagram
 
+"""
+    AbstractVectorizer <: Unsupervised
+
+To be an AbstractVectorizer, a type needs to implement `vectorizer(model, diagrams)`. It
+should return a callable object that transforms diagrams to vectors and has a method for
+`output_size`.
+"""
 abstract type AbstractVectorizer <: MMI.Unsupervised end
 
 function MMI.fit(model::AbstractVectorizer, ::Int, X)
     vectorizers = map(Tables.columnnames(X)) do col
-        col => _vectorizer(model, vec(Tables.getcolumn(X, col)))
+        col => vectorizer(model, vec(Tables.getcolumn(X, col)))
     end
     return (vectorizers, nothing, NamedTuple())
 end
@@ -146,7 +154,7 @@ function MMI.clean!(model::PersistenceImageVectorizer)
     return warning
 end
 
-function _vectorizer(model::PersistenceImageVectorizer, diagrams)
+function vectorizer(model::PersistenceImageVectorizer, diagrams)
     if model.distribution == :default
         distribution = nothing
         sigma = model.sigma == -1 ? nothing : model.sigma
@@ -228,7 +236,7 @@ function PersistenceCurveVectorizer(;
     return PersistenceCurveVectorizer(fun, stat, curve, integrate, normalize, length)
 end
 
-function _vectorizer(model::PersistenceCurveVectorizer, diagrams)
+function vectorizer(model::PersistenceCurveVectorizer, diagrams)
     return PersistenceCurve(
         model.fun,
         model.stat,
@@ -327,7 +335,7 @@ function PersistenceLandscapeVectorizer(; n_landscapes=1, length=10)
     return PersistenceLandscapeVectorizer(n_landscapes, length)
 end
 
-function _vectorizer(model::PersistenceLandscapeVectorizer, diagrams)
+function vectorizer(model::PersistenceLandscapeVectorizer, diagrams)
     return Landscapes(model.n_landscapes, diagrams; length=model.length)
 end
 
