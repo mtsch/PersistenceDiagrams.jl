@@ -3,7 +3,7 @@
 import MLJModelInterface
 const MMI = MLJModelInterface
 
-# TODO is this ok?
+# TODO: remove
 MMI.ScientificTypes.scitype(::PersistenceDiagram) = PersistenceDiagram
 
 """
@@ -101,9 +101,12 @@ function PersistenceImageVectorizer(;
     margin=0.1,
     zero_start=true,
 )
-    return PersistenceImageVectorizer(
+    model = PersistenceImageVectorizer(
         distribution, sigma, weight, slope_end, width, height, margin, zero_start
     )
+    warning = MMI.clean!(model)
+    isempty(warning) || @warn warning
+    return model
 end
 
 function _is_callable(fun)
@@ -230,7 +233,10 @@ end
 function PersistenceCurveVectorizer(;
     fun=always_one, stat=sum, curve=:custom, integrate=true, normalize=false, length=10
 )
-    return PersistenceCurveVectorizer(fun, stat, curve, integrate, normalize, length)
+    model = PersistenceCurveVectorizer(fun, stat, curve, integrate, normalize, length)
+    warning = MMI.clean!(model)
+    isempty(warning) || @warn warning
+    return model
 end
 
 function vectorizer(model::PersistenceCurveVectorizer, diagrams)
@@ -326,7 +332,10 @@ mutable struct PersistenceLandscapeVectorizer <: AbstractVectorizer
 end
 
 function PersistenceLandscapeVectorizer(; n_landscapes=1, length=10)
-    return PersistenceLandscapeVectorizer(n_landscapes, length)
+    model = PersistenceLandscapeVectorizer(n_landscapes, length)
+    warning = MMI.clean!(model)
+    isempty(warning) || @warn warning
+    return model
 end
 
 function vectorizer(model::PersistenceLandscapeVectorizer, diagrams)

@@ -1,13 +1,18 @@
 using MLJBase
 using PersistenceDiagrams
 using PersistenceDiagrams.MLJPersistenceDiagrams
+using Suppressor
 using Tables
 using Test
 
 diagrams = (
-    dim_0=[PersistenceDiagram([(0, Inf), (0, 1)]), PersistenceDiagram([(0, Inf), (0, 1.5)])],
+    dim_0=[
+        PersistenceDiagram([(0.0, Inf), (0.0, 1.0)]),
+        PersistenceDiagram([(0.0, Inf), (0.0, 1.5)]),
+    ],
     dim_1=[
-        PersistenceDiagram([(0, 1), (1.2, 2)]), PersistenceDiagram([(1, 1.1), (1.3, 1.9)])
+        PersistenceDiagram([(0.0, 1.0), (1.2, 2.0)]),
+        PersistenceDiagram([(1.0, 1.1), (1.3, 1.9)]),
     ],
 )
 table = MLJBase.table(diagrams)
@@ -25,20 +30,21 @@ Tests that for given model and kwargs:
 """
 function test_clean(model_type, kwargs; expect_warning=true)
     @testset "`clean!` with $kwargs" begin
-        model = model_type(; kwargs...)
-
-        warning = clean!(model)
+        # Does clean warn?
+        local model
+        warning = @capture_err begin
+            model = model_type(; kwargs...)
+        end
         if expect_warning
             @test warning ≠ ""
         else
             @test warning == ""
         end
 
+        # Cleaning again should not warn and should not change anything.
+        prev_model = deepcopy(model)
         warning = clean!(model)
         @test warning == ""
-
-        prev_model = model_type(; kwargs...)
-        clean!(prev_model)
         for field in fieldnames(model_type)
             @test getfield(model, field) == getfield(prev_model, field)
         end
