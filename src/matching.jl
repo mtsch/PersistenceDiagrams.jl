@@ -98,7 +98,7 @@ function Base.summary(io::IO, match::Matching)
     return print(io, "$(length(match))-element $(b)Matching with weight $(match.weight)")
 end
 function Base.show(io::IO, match::Matching)
-    Base.summary(io, match)
+    return Base.summary(io, match)
 end
 function Base.show(io::IO, ::MIME"text/plain", match::Matching)
     print(io, match)
