@@ -123,7 +123,7 @@ end
 @recipe function f(
     diags::Union{
         NTuple{<:Any,PersistenceDiagram},
-        AbstractArray{<:PersistenceDiagram},
+        AbstractArray{PersistenceDiagram},
         PersistenceDiagram,
     },
 )
@@ -206,7 +206,7 @@ struct Barcode
 end
 
 Barcode(diag::PersistenceDiagram) = Barcode((diag,))
-Barcode(diags::AbstractArray{<:PersistenceDiagram}) = Barcode(tuple(diags...))
+Barcode(diags::AbstractArray{PersistenceDiagram}) = Barcode(tuple(diags...))
 Barcode(diags::Vararg{PersistenceDiagram}) = Barcode(diags)
 
 @recipe function f(bc::Barcode)

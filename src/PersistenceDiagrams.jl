@@ -34,7 +34,6 @@ export PersistenceDiagram,
     barcode
 
 using Compat
-using Distances
 using Hungarian
 using PersistenceDiagramsBase
 using RecipesBase
