@@ -7,7 +7,7 @@ end
 @safetestset "persistencecurves" begin
     include("persistencecurves.jl")
 end
-@safetestset "images" begin
+@safetestset "persistenceimages" begin
     include("persistenceimages.jl")
 end
 @safetestset "plotsrecipes" begin

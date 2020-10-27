@@ -3,7 +3,7 @@
 
 Types and functions for working with persistence diagrams.
 
-See https://mtsch.github.io/PersistenceDiagrams.jl/dev/ for documentation.
+See [the docs](https://mtsch.github.io/PersistenceDiagrams.jl/dev/) for documentation.
 """
 module PersistenceDiagrams
 
@@ -24,13 +24,14 @@ export PersistenceDiagram,
     PersistenceImage,
     PersistenceCurve,
     BettiCurve,
-    Landscape,
-    Silhuette,
     Life,
     Midlife,
     LifeEntropy,
     MidlifeEntropy,
     PDThresholding,
+    Landscape,
+    Landscapes,
+    Silhuette,
     barcode
 
 using Compat
@@ -40,6 +41,7 @@ using RecipesBase
 using Statistics
 
 include("matching.jl")
+
 include("persistencecurves.jl")
 include("persistenceimages.jl")
 
