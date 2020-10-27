@@ -1,9 +1,8 @@
-# TODO: support manually setting ranges?
-
 import MLJModelInterface
 const MMI = MLJModelInterface
 
-# TODO: remove
+# TODO: remove when https://github.com/alan-turing-institute/MLJScientificTypes.jl/pull/48
+# is merged.
 MMI.ScientificTypes.scitype(::PersistenceDiagram) = PersistenceDiagram
 
 """

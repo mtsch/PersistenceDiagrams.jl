@@ -156,7 +156,7 @@ function _value_at!(buffer, diagram, fun, stat, time)
             if isfinite(val)
                 push!(buffer, val)
             else
-                @warn "Skipping infinite intervalervals" maxlog = 1
+                @warn "Skipping infinite intervals" maxlog = 1
             end
         end
     end

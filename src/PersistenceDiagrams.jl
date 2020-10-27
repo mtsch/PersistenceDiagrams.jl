@@ -39,6 +39,7 @@ using Hungarian
 using PersistenceDiagramsBase
 using RecipesBase
 using Statistics
+using Tables
 
 include("matching.jl")
 
