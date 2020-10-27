@@ -2,27 +2,27 @@ using PersistenceDiagrams
 using Test
 
 using PersistenceDiagrams:
-    adjacency_matrix,
     BottleneckGraph,
-    depth_layers,
-    augmenting_paths,
-    augment!,
-    hopcroft_karp!
+    _adjacency_matrix,
+    _depth_layers,
+    _augmenting_paths,
+    _augment!,
+    _hopcroft_karp!
 
-@testset "adjacency_matrix" begin
+@testset "_adjacency_matrix" begin
     diag1 = PersistenceDiagram([(1, 2), (1, Inf)])
     diag2 = PersistenceDiagram([(3, 4), (5, 10), (7, Inf)])
 
-    #                                        1,2 1,∞ 3,3 5,5 7,7
-    @test adjacency_matrix(diag1, diag2) == [
+    @test _adjacency_matrix(diag1, diag2) == [
+        # 1,2 1,∞ 3,3 5,5 7,7
         2.0 Inf 1.0 Inf Inf  # 3,4
         8.0 Inf Inf 5.0 Inf  # 5,7
         Inf 6.0 Inf Inf Inf  # 7,∞
         1.0 Inf 0.0 0.0 0.0  # 1,1
-        Inf Inf 0.0 0.0 0.0
-    ] # 1,1
+        Inf Inf 0.0 0.0 0.0  # 1,1
+    ]
 
-    @test adjacency_matrix(diag1, diag2) == adjacency_matrix(diag2, diag1)'
+    @test _adjacency_matrix(diag1, diag2) == _adjacency_matrix(diag2, diag1)'
 end
 
 @testset "Hopcroft-Karp" begin
@@ -33,19 +33,19 @@ end
     ]
     graph = BottleneckGraph(adj, [0, 0, 0], [0, 0, 0], Int[], 3)
 
-    @test depth_layers(graph, 2) == ([1, 1, 1], 1)
-    @test augmenting_paths(graph, 2) == [[1, 1], [3, 2]]
+    @test _depth_layers(graph, 2) == ([1, 1, 1], 1)
+    @test _augmenting_paths(graph, 2) == [[1, 1], [3, 2]]
 
     graph = BottleneckGraph(adj, [1, 0, 2], [1, 3, 0], Int[], 3)
-    @test depth_layers(graph, 2) == ([1, 2, 3], 3)
-    @test augmenting_paths(graph, 2) == [[2, 1, 1, 2, 3, 3]]
-    augment!(graph, [2, 1, 1, 2, 3, 3])
+    @test _depth_layers(graph, 2) == ([1, 2, 3], 3)
+    @test _augmenting_paths(graph, 2) == [[2, 1, 1, 2, 3, 3]]
+    _augment!(graph, [2, 1, 1, 2, 3, 3])
     @test graph.match_left == [2, 1, 3]
     @test graph.match_right == [2, 1, 3]
 
     graph = BottleneckGraph(adj, [0, 0, 0], [0, 0, 0], Int[], 3)
-    @test hopcroft_karp!(graph, 2) == ([1 => 2, 2 => 1, 3 => 3], true)
-    @test hopcroft_karp!(graph, 1) == ([1 => 1, 3 => 2], false)
+    @test _hopcroft_karp!(graph, 2) == ([1 => 2, 2 => 1, 3 => 3], true)
+    @test _hopcroft_karp!(graph, 1) == ([1 => 1, 3 => 2], false)
 end
 
 @testset "Bottleneck basics" begin

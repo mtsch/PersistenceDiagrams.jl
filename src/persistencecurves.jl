@@ -1,5 +1,5 @@
 """
-    PersistenceCurves
+    PersistenceCurve
 
 Persistence curves offer a general way to transform a persistence diagram into a vector of
 numbers.
