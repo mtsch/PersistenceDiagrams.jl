@@ -28,7 +28,7 @@ Get the matching between persistence diagrams `left` and `right`.
 
 # See also
 
-* [`matching`](@ref)
+* [`weight`](@ref)
 * [`Bottleneck`](@ref)
 * [`Wasserstein`](@ref)
 """
@@ -44,9 +44,9 @@ A matching between two persistence diagrams.
 * [`weight(::Matching)`](@ref)
 * [`matching(::Matching)`](@ref)
 """
-struct Matching{L<:PersistenceDiagram,R<:PersistenceDiagram}
-    left::L
-    right::R
+struct Matching
+    left::PersistenceDiagram
+    right::PersistenceDiagram
     weight::Float64
     matching::Vector{Pair{Int,Int}}
     bottleneck::Bool
@@ -57,14 +57,22 @@ weight(match::Matching) = match.weight
 Base.length(match::Matching) = length(match.matching)
 Base.isempty(match::Matching) = isempty(match.matching)
 
-function distance(int1, int2)
+function _distance(int1, int2)
     if isfinite(int1) && isfinite(int2)
         return max(abs(birth(int1) - birth(int2)), abs(death(int1) - death(int2)))
-    elseif isfinite(int1) && isfinite(int2)
+    elseif !isfinite(int1) && !isfinite(int2)
         return abs(birth(int1) - birth(int2))
     else
         return Inf
     end
+end
+
+function _distances(left, right)
+    dists = zeros(length(right), length(left))
+    for j in eachindex(left), i in eachindex(right)
+        dists[i, j] = _distance(left[j], right[i])
+    end
+    return dists
 end
 
 function matching(match::Matching; bottleneck=match.bottleneck)
@@ -89,30 +97,30 @@ function matching(match::Matching; bottleneck=match.bottleneck)
     if !bottleneck
         return result
     else
-        return filter!(m -> distance(m...) == match.weight, result)
+        return filter!(m -> _distance(m...) == match.weight, result)
     end
 end
 
+function Base.summary(io::IO, match::Matching)
+    b = match.bottleneck ? "Bottleneck " : ""
+    return print(io, "$(b)Matching with weight $(match.weight)")
+end
 function Base.show(io::IO, match::Matching)
-    b = match.bottleneck ? "bottleneck " : ""
-    return print(io, "$(length(match))-element $(b)Matching with weight $(match.weight)")
+    return Base.summary(io, match)
 end
 function Base.show(io::IO, ::MIME"text/plain", match::Matching)
     print(io, match)
     if length(match) > 0
         print(io, ":")
-        show_intervals(io, matching(match))
+        pairs = matching(match)
+        for p in pairs
+            print(io, "\n ", p)
+        end
     end
 end
 
-# convert n-element diagram to 2×n matrix
-function _to_matrix(diag)
-    pts = Tuple{Float64,Float64}[(birth(i), death(i)) for i in diag if isfinite(i)]
-    return reshape(reinterpret(Float64, pts), (2, length(pts)))
-end
-
 """
-    adjacency_matrix(left::PersistenceDiagram, right::PersistenceDiagram, power)
+    _adjacency_matrix(left::PersistenceDiagram, right::PersistenceDiagram, power)
 
 Get the adjacency matrix of the matching between `left` and `right`. Edge weights are equal
 to distances between intervals raised to the power of `power`. Distances between diagonal
@@ -128,7 +136,7 @@ julia> left = PersistenceDiagram([(0.0, 1.0), (3.0, 4.5)]);
 
 julia> right = PersistenceDiagram([(0.0, 1.0), (4.0, 5.0), (4.0, 7.0)]);
 
-julia> PersistenceDiagrams.adjacency_matrix(left, right)
+julia> PersistenceDiagrams._adjacency_matrix(left, right)
 5×5 Array{Float64,2}:
   0.0   3.5   1.0  Inf   Inf
   4.0   1.0  Inf    1.0  Inf
@@ -137,7 +145,7 @@ julia> PersistenceDiagrams.adjacency_matrix(left, right)
  Inf    1.5   0.0   0.0   0.0
 ```
 """
-function adjacency_matrix(left, right, power=1)
+function _adjacency_matrix(left, right, power=1)
     left = sort(left; by=death)
     right = sort(right; by=death)
 
@@ -145,7 +153,7 @@ function adjacency_matrix(left, right, power=1)
     m = length(right)
     adj = fill(Inf, n + m, m + n)
 
-    dists = pairwise(Chebyshev(), _to_matrix(right), _to_matrix(left); dims=2)
+    dists = _distances(left, right)
     adj[axes(dists)...] .= dists
     for i in (size(dists, 2) + 1):n, j in (size(dists, 1) + 1):m
         adj[j, i] = abs(birth(left[i]) - birth(right[j]))
@@ -196,14 +204,14 @@ end
 function BottleneckGraph(left::PersistenceDiagram, right::PersistenceDiagram)
     n = length(left)
     m = length(right)
-    adj = adjacency_matrix(left, right)
+    adj = _adjacency_matrix(left, right)
 
     edges = filter!(isfinite, sort!(unique!(copy(vec(adj)))))
 
     return BottleneckGraph(adj, fill(0, n + m), fill(0, m + n), edges, n + m)
 end
 
-function left_neighbors!(buff, graph::BottleneckGraph, vertices, ε, pred)
+function _left_neighbors!(buff, graph::BottleneckGraph, vertices, ε, pred)
     empty!(buff)
     for l in vertices
         for r in axes(graph.adj, 1)
@@ -213,7 +221,7 @@ function left_neighbors!(buff, graph::BottleneckGraph, vertices, ε, pred)
     return unique!(buff)
 end
 
-function right_neighbors!(buff, graph::BottleneckGraph, vertices)
+function _right_neighbors!(buff, graph::BottleneckGraph, vertices)
     empty!(buff)
     for r in vertices
         push!(buff, graph.match_right[r])
@@ -221,46 +229,46 @@ function right_neighbors!(buff, graph::BottleneckGraph, vertices)
     return buff
 end
 
-is_exposed_right(graph::BottleneckGraph, r) = graph.match_right[r] == 0
-exposed_left(graph::BottleneckGraph) = findall(iszero, graph.match_left)
+_is_exposed_right(graph::BottleneckGraph, r) = graph.match_right[r] == 0
+_exposed_left(graph::BottleneckGraph) = findall(iszero, graph.match_left)
 
 """
-    depths(graph::BottleneckGraph, ε)
+    _depth_layers(graph::BottleneckGraph, ε)
 
 Split `graph` into layers by how deep they are from a bfs starting at exposed left
 vertices in `graph` only taking into account edges of length smaller than or equal to `ε`.
 Return depts of right vertices and maximum depth reached.
 """
-function depth_layers(graph::BottleneckGraph, ε)
+function _depth_layers(graph::BottleneckGraph, ε)
     depths = fill(0, graph.n_vertices)
     visited = fill(false, graph.n_vertices)
-    lefts = exposed_left(graph)
+    lefts = _exposed_left(graph)
     rights = Int[]
     i = 1
     while true
-        left_neighbors!(rights, graph, lefts, ε, r -> !visited[r])
+        _left_neighbors!(rights, graph, lefts, ε, r -> !visited[r])
         visited[rights] .= true
         depths[rights] .= i
         if isempty(rights)
             # no augmenting path exists
             return nothing, nothing
-        elseif any(r -> is_exposed_right(graph, r), rights)
+        elseif any(r -> _is_exposed_right(graph, r), rights)
             return depths, i
         else
-            right_neighbors!(lefts, graph, rights)
+            _right_neighbors!(lefts, graph, rights)
         end
         i += 1
     end
 end
 
 """
-    augmenting_paths(graph::BottleneckGraph, ε)
+    _augmenting_paths(graph::BottleneckGraph, ε)
 
 find a maximal set of augmenting paths in graph, taking only edges with weight less than or
 equal to `ε` into account.
 """
-function augmenting_paths(graph::BottleneckGraph, ε)
-    depths, max_depth = depth_layers(graph, ε)
+function _augmenting_paths(graph::BottleneckGraph, ε)
+    depths, max_depth = _depth_layers(graph, ε)
     paths = Vector{Int}[]
     isnothing(depths) && return paths
 
@@ -269,7 +277,7 @@ function augmenting_paths(graph::BottleneckGraph, ε)
     lefts = Int[]
     stack = Tuple{Int,Int}[]
 
-    for l_start in exposed_left(graph)
+    for l_start in _exposed_left(graph)
         empty!(stack)
         push!(stack, (l_start, 1))
         prev .= 0
@@ -277,15 +285,15 @@ function augmenting_paths(graph::BottleneckGraph, ε)
         while !isempty(stack)
             l, i = pop!(stack)
             parent = graph.match_left[l]
-            left_neighbors!(rights, graph, l, ε, r -> depths[r] == i)
+            _left_neighbors!(rights, graph, l, ε, r -> depths[r] == i)
             if i < max_depth
                 prev[rights] .= l
-                right_neighbors!(lefts, graph, rights)
+                _right_neighbors!(lefts, graph, rights)
                 append!(stack, (l, i + 1) for l in lefts)
             else
                 found_path = false
                 for r in rights
-                    if is_exposed_right(graph, r)
+                    if _is_exposed_right(graph, r)
                         prev[r] = l
                         path = Int[r]
                         depths[r] = 0
@@ -311,13 +319,13 @@ function augmenting_paths(graph::BottleneckGraph, ε)
     return paths
 end
 
-function unmatch_all!(graph::BottleneckGraph)
+function _unmatch_all!(graph::BottleneckGraph)
     graph.match_left .= 0
     graph.match_right .= 0
     return (0, 0)
 end
 
-function augment!(graph, p)
+function _augment!(graph, p)
     for i in 1:2:(length(p) - 1)
         l, r = p[i], p[i + 1]
         graph.match_left[l] = r
@@ -325,14 +333,14 @@ function augment!(graph, p)
     end
 end
 
-function hopcroft_karp!(graph, ε)
-    unmatch_all!(graph)
-    paths = augmenting_paths(graph, ε)
+function _hopcroft_karp!(graph, ε)
+    _unmatch_all!(graph)
+    paths = _augmenting_paths(graph, ε)
     while !isempty(paths)
         for p in paths
-            augment!(graph, p)
+            _augment!(graph, p)
         end
-        paths = augmenting_paths(graph, ε)
+        paths = _augmenting_paths(graph, ε)
     end
     matching =
         [i => graph.match_left[i] for i in 1:(graph.n_vertices) if graph.match_left[i] ≠ 0]
@@ -377,8 +385,8 @@ julia> Bottleneck()(left, right)
 2.0
 
 julia> Bottleneck()(left, right; matching=true)
-5-element bottleneck Matching with weight 2.0:
- Pair{PersistenceInterval,PersistenceInterval}([5.0, 8.0), [5.0, 10.0))
+Bottleneck Matching with weight 2.0:
+ [5.0, 8.0) => [5.0, 10.0)
 
 ```
 """
@@ -400,18 +408,18 @@ function (::Bottleneck)(left, right; matching=false)
     hi = length(edges)
     while lo < hi - 1
         m = lo + ((hi - lo) >>> 0x01)
-        _, succ = hopcroft_karp!(graph, edges[m])
+        _, succ = _hopcroft_karp!(graph, edges[m])
         if succ
             hi = m
         else
             lo = m
         end
     end
-    match, succ = hopcroft_karp!(graph, edges[lo])
+    match, succ = _hopcroft_karp!(graph, edges[lo])
     distance = edges[lo]
     if !succ
         distance = edges[hi]
-        match, _ = hopcroft_karp!(graph, edges[hi])
+        match, _ = _hopcroft_karp!(graph, edges[hi])
     end
     @assert length(match) == length(left) + length(right)
     if matching
@@ -457,10 +465,10 @@ julia> Wasserstein()(left, right)
 3.0
 
 julia> Wasserstein()(left, right; matching=true)
-5-element Matching with weight 3.0:
- Pair{PersistenceInterval,PersistenceInterval}([1.0, 2.0), [1.0, 2.0))
- Pair{PersistenceInterval,PersistenceInterval}([3.0, 3.0), [3.0, 4.0))
- Pair{PersistenceInterval,PersistenceInterval}([5.0, 8.0), [5.0, 10.0))
+Matching with weight 3.0:
+ [1.0, 2.0) => [1.0, 2.0)
+ [3.0, 3.0) => [3.0, 4.0)
+ [5.0, 8.0) => [5.0, 10.0)
 
 ```
 """
@@ -472,7 +480,7 @@ end
 
 function (w::Wasserstein)(left, right; matching=false)
     if count(!isfinite, left) == count(!isfinite, right)
-        adj = adjacency_matrix(right, left, w.q)
+        adj = _adjacency_matrix(right, left, w.q)
         match = collect(i => j for (i, j) in enumerate(hungarian(adj)[1]))
         distance = sum(adj[i, j] for (i, j) in match)^(1 / w.q)
 

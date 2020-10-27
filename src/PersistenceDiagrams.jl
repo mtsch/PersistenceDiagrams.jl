@@ -7,14 +7,14 @@ See [the docs](https://mtsch.github.io/PersistenceDiagrams.jl/dev/) for document
 """
 module PersistenceDiagrams
 
-export PersistenceInterval,
+export PersistenceDiagram,
+    PersistenceInterval,
     birth,
     death,
     persistence,
     representative,
     birth_simplex,
     death_simplex,
-    PersistenceDiagram,
     dim,
     threshold,
     Bottleneck,
@@ -35,15 +35,10 @@ export PersistenceInterval,
     barcode
 
 using Compat
-using Distances
 using Hungarian
+using PersistenceDiagramsBase
 using RecipesBase
 using Statistics
-using Tables
-
-include("intervals.jl")
-include("diagrams.jl")
-include("tables.jl")
 
 include("matching.jl")
 
