@@ -93,15 +93,21 @@ function matching(match::Matching; bottleneck=match.bottleneck)
     end
 end
 
-function Base.show(io::IO, match::Matching)
+function Base.summary(io::IO, match::Matching)
     b = match.bottleneck ? "bottleneck " : ""
     return print(io, "$(length(match))-element $(b)Matching with weight $(match.weight)")
+end
+function Base.show(io::IO, match::Matching)
+    return Base.summary(io, match)
 end
 function Base.show(io::IO, ::MIME"text/plain", match::Matching)
     print(io, match)
     if length(match) > 0
         print(io, ":")
-        show_intervals(io, matching(match))
+        pairs = matching(match)
+        for p in pairs
+            print(io, "\n ", p)
+        end
     end
 end
 
@@ -378,7 +384,7 @@ julia> Bottleneck()(left, right)
 
 julia> Bottleneck()(left, right; matching=true)
 5-element bottleneck Matching with weight 2.0:
- Pair{PersistenceInterval,PersistenceInterval}([5.0, 8.0), [5.0, 10.0))
+ [5.0, 8.0) => [5.0, 10.0)
 
 ```
 """
@@ -458,9 +464,9 @@ julia> Wasserstein()(left, right)
 
 julia> Wasserstein()(left, right; matching=true)
 5-element Matching with weight 3.0:
- Pair{PersistenceInterval,PersistenceInterval}([1.0, 2.0), [1.0, 2.0))
- Pair{PersistenceInterval,PersistenceInterval}([3.0, 3.0), [3.0, 4.0))
- Pair{PersistenceInterval,PersistenceInterval}([5.0, 8.0), [5.0, 10.0))
+ [1.0, 2.0) => [1.0, 2.0)
+ [3.0, 3.0) => [3.0, 4.0)
+ [5.0, 8.0) => [5.0, 10.0)
 
 ```
 """
