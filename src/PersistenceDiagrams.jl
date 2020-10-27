@@ -7,8 +7,7 @@ See https://mtsch.github.io/PersistenceDiagrams.jl/dev/ for documentation.
 """
 module PersistenceDiagrams
 
-export
-    PersistenceDiagram,
+export PersistenceDiagram,
     PersistenceInterval,
     birth,
     death,
@@ -18,12 +17,10 @@ export
     death_simplex,
     dim,
     threshold,
-
     Bottleneck,
     Wasserstein,
     weight,
     matching,
-
     PersistenceImage,
     PersistenceCurve,
     BettiCurve,
@@ -34,7 +31,6 @@ export
     LifeEntropy,
     MidlifeEntropy,
     PDThresholding,
-
     barcode
 
 using Compat
