@@ -89,7 +89,7 @@ mutable struct PersistenceImageVectorizer <: AbstractVectorizer
     margin::Float64
     zero_start::Bool
 end
-# TODO: replace with Base.@kwdef when 1.6 becomes LTS
+
 function PersistenceImageVectorizer(;
     distribution=:default,
     sigma=-1,
@@ -228,7 +228,7 @@ mutable struct PersistenceCurveVectorizer <: AbstractVectorizer
     normalize::Bool
     length::Int
 end
-# TODO: replace with Base.@kwdef when 1.6 becomes LTS
+
 function PersistenceCurveVectorizer(;
     fun=always_one, stat=sum, curve=:custom, integrate=true, normalize=false, length=10
 )
