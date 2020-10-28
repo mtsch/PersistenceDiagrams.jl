@@ -9,14 +9,12 @@ Hungarian = "e91730f6-4275-51fb-a7a0-7064cfbd3b39"
 PersistenceDiagramsBase = "b1ad91c1-539c-4ace-90bd-ea06abc420fa"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 
 [compat]
 Compat = "^3.10.0"
 Hungarian = "0.6"
 PersistenceDiagramsBase = "0.1"
 RecipesBase = "1"
-Tables = "1"
 julia = "1"
 
 [extras]

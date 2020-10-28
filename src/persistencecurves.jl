@@ -19,7 +19,7 @@ persistence diagram to a vector of floats.
 * `PersistenceCurve(fun, stat, diagrams; length=10, integreate=true, normalize=false)`:
   learn the `start` and `stop` parameters from a collection of persistence diagrams.
 
-## Keyword arguments
+## Arguments
 
 * `length`: the length of the output. Defaults to 10.
 * `fun`: the function applied to each interval. Must have the following signature.
@@ -114,97 +114,96 @@ function PersistenceCurve(fun, stat, diagrams; length=10, integrate=true, normal
     )
 end
 
+output_size(curve::PersistenceCurve) = curve.length
+
+_nameof(f::Function) = nameof(f)
+_nameof(::T) where {T} = nameof(T)
+
 function Base.show(io::IO, curve::PersistenceCurve)
-    fname = nameof(curve.fun)
-    sname = nameof(curve.stat)
+    fname = _nameof(curve.fun)
+    sname = _nameof(curve.stat)
+    length = curve.length
+    normalize = curve.normalize
+    integrate = curve.integrate
     return print(
         io,
         "PersistenceCurve(",
         join((fname, sname, string(curve.start), string(curve.stop)), ", "),
-        "; length=",
-        curve.length,
-        ", normalize=",
-        curve.normalize,
-        ", integrate=",
-        curve.integrate,
-        ")",
+        "; length=$length, normalize=$normalize, integrate=$integrate)",
     )
 end
 
-Base.firstindex(bc::PersistenceCurve) = 1
-Base.lastindex(bc::PersistenceCurve) = bc.length
-Base.length(bc::PersistenceCurve) = bc.length
-Base.eachindex(bc::PersistenceCurve) = Base.OneTo(bc.length)
-function Base.getindex(bc::PersistenceCurve, i::Integer)
-    0 < i ≤ bc.length || throw(BoundsError(bc, i))
-    return Float64(bc.start + i * bc.step - bc.step / 2)
-end
-function Base.getindex(bc::PersistenceCurve, is)
-    return [bc[i] for i in is]
+"""
+    _time_at(curve, i)
+
+Get the time at index `i`.
+"""
+function _time_at(curve, i)
+    0 < i ≤ curve.length || throw(BoundsError(curve, i))
+    return Float64(curve.start + i * curve.step - curve.step / 2)
 end
 
-function Base.iterate(bc::PersistenceCurve, i=1)
-    if i ≤ length(bc)
-        return bc[i], i + 1
-    else
-        return nothing
-    end
-end
+"""
+    _value_at!(buffer, diagram, fun, stat, time)
 
-function _value_at!(buff, f, s, diag, t)
-    empty!(buff)
-    for int in diag
-        if birth(int) ≤ t < death(int)
-            val = f(int, diag, t)
+Collect contributions to curve from all intervals in `buffer` and `stat` them.
+"""
+function _value_at!(buffer, diagram, fun, stat, time)
+    empty!(buffer)
+    for interval in diagram
+        if birth(interval) ≤ time < death(interval)
+            val = fun(interval, diagram, time)
             if isfinite(val)
-                push!(buff, val)
+                push!(buffer, val)
             else
-                error("Invalid value $val produced. Please remove infinite intervals")
+                @warn "Skipping infinite intervals" maxlog = 1
             end
         end
     end
-    if isempty(buff)
+    if isempty(buffer)
         return 0.0
     else
-        return s(buff)
+        return stat(buffer)
     end
 end
 
-function (curve::PersistenceCurve)(
-    diag; integrate=curve.integrate, normalize=curve.normalize
-)
-    result = integrate ? _integrate(curve, diag) : _sample(curve, diag)
-    if normalize
-        norm = curve.stat(curve.fun(int, diag, nothing) for int in diag)
+function (curve::PersistenceCurve)(diagram)
+    result = curve.integrate ? _integrate(curve, diagram) : _sample(curve, diagram)
+    if curve.normalize
+        norm = curve.stat([curve.fun(int, diagram, nothing) for int in diagram])
         return result ./ norm
     else
         return result
     end
 end
 
-function _sample(curve, diag)
+function _sample(curve, diagram)
     buff = Float64[]
-    return map(eachindex(curve)) do i
-        _value_at!(buff, curve.fun, curve.stat, diag, curve[i])
+    return map(1:(curve.length)) do i
+        _value_at!(buff, diagram, curve.fun, curve.stat, _time_at(curve, i))
     end
 end
 
-function _integrate(curve, diag)
-    ts = unique!(sort!(collect(Iterators.flatten(diag)); rev=true))
+function _integrate(curve, diagram)
+    # The idea here is that short intervals that evaluate to zero on all points should still
+    # contribute something. This is done by moving to the right on each event (time point or
+    # birth/death), and then summing the chunks of each interval.
+
+    ts = unique!(sort!(collect(Iterators.flatten(diagram)); rev=true))
     pushfirst!(ts, Inf)
-    buff = Float64[]
+    buffer = Float64[]
     lo_exact = curve.start
     hi_exact = curve.start + curve.step
-    return map(eachindex(curve)) do i
+    return map(1:(curve.length)) do i
         lo, hi = Float64(lo_exact), Float64(hi_exact)
         t1, t2 = lo, min(hi, last(ts))
         δ = (t2 - t1) / (hi - lo)
-        result = _value_at!(buff, curve.fun, curve.stat, diag, (t1 + t2) / 2) * δ
+        result = _value_at!(buffer, diagram, curve.fun, curve.stat, (t1 + t2) / 2) * δ
         while !isempty(ts) && last(ts) < Float64(hi)
             t1 = pop!(ts)
             t2 = min(last(ts), Float64(hi))
             δ = (t2 - t1) / (hi - lo)
-            result += _value_at!(buff, curve.fun, curve.stat, diag, (t1 + t2) / 2) * δ
+            result += _value_at!(buffer, diagram, curve.fun, curve.stat, (t1 + t2) / 2) * δ
         end
         lo_exact += curve.step
         hi_exact += curve.step
@@ -223,56 +222,13 @@ they support infinite intervals.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
+
 """
 function BettiCurve(args...; kwargs...)
     return PersistenceCurve(always_one, sum, args...; kwargs...)
 end
 always_one(_...) = 1.0
-
-"""
-    Landscape(k, args...)
-
-The `k`-th persistence landscape.
-
-    fun((b, d), _, t) = max(min(t - b, d - t), 0)
-    stat = get(sort(values, rev=true), k, 0.0)
-
-# See also
-
-[`PersistenceCurve`](@ref)
-
-# Reference
-
-Bubenik, P. (2015). Statistical topological data analysis using persistence landscapes. [The
-Journal of Machine Learning Research, 16(1),
-77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
-"""
-function Landscape(k, args...; kwargs...)
-    return PersistenceCurve(landscape, k_max(k), args...; integrate=false, kwargs...)
-end
-landscape((b, d), _, t) = max(min(t - b, d - t), 0)
-struct k_max
-    k::Int
-end
-(m::k_max)(values) = get(sort(values; rev=true), m.k, 0.0)
-
-"""
-    Silhuette
-
-The sum of persistence landscapes for all values of `k`.
-
-    fun((b, d), _, t) = max(min(t - b, d - t), 0)
-    stat = sum
-
-# See also
-
-[`PersistenceCurve`](@ref)
-[`Landscape`](@ref)
-"""
-function Silhuette(args...; kwargs...)
-    return PersistenceCurve(landscape, sum, args...; kwargs...)
-end
 
 """
     Life
@@ -284,7 +240,7 @@ The life curve.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -306,7 +262,7 @@ The midlife curve.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -331,7 +287,7 @@ The life entropy curve.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -360,7 +316,7 @@ The midlife entropy curve.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
 
 # Reference
 
@@ -385,14 +341,116 @@ The persistence diagram thresholding function.
 
 # See also
 
-[`PersistenceCurve`](@ref)
+* [`PersistenceCurve`](@ref)
 
 # Reference
 
 Chung, Y. M., & Day, S. (2018). Topological fidelity and image thresholding: A persistent
 homology approach. Journal of Mathematical Imaging and Vision, 60(7), 1167-1179.
 """
-function PDThresholding(args...; kwargs...)
-    return PersistenceCurve(thresholding, mean, args...; kwargs...)
+function PDThresholding(args...; length=10, integrate=true)
+    return PersistenceCurve(thresholding, mean, args...; length=length, integrate=integrate)
 end
 thresholding((b, d), _, t) = (d - t) * (t - b)
+
+"""
+    Landscape(k, args...)
+
+The `k`-th persistence landscape.
+
+    fun((b, d), _, t) = max(min(t - b, d - t), 0)
+    stat = get(sort(values, rev=true), k, 0.0)
+
+# See also
+
+* [`PersistenceCurve`](@ref)
+* [`Landscapes`](@ref)
+
+# Reference
+
+Bubenik, P. (2015). Statistical topological data analysis using persistence landscapes. [The
+Journal of Machine Learning Research, 16(1),
+77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
+"""
+function Landscape(k, args...; length=10)
+    if k < 1
+        throw(ArgumentError("`k` must be positive"))
+    end
+    return PersistenceCurve(
+        landscape, k_max(k), args...; length=length, integrate=false, normalize=false
+    )
+end
+landscape((b, d), _, t) = max(min(t - b, d - t), 0)
+struct k_max
+    k::Int
+end
+(m::k_max)(values) = get(sort(values; rev=true), m.k, 0.0)
+
+"""
+    Landscapes(n, args...)
+
+The first `n` persistence landscapes.
+
+    fun((b, d), _, t) = max(min(t - b, d - t), 0)
+    stat = get(sort(values, rev=true), k, 0.0)
+
+Vectorizes to a matrix where each column is a landscape.
+
+# See also
+
+* [`PersistenceCurve`](@ref)
+* [`Landscape`](@ref)
+
+# Reference
+
+Bubenik, P. (2015). Statistical topological data analysis using persistence landscapes. [The
+Journal of Machine Learning Research, 16(1),
+77-102](http://www.jmlr.org/papers/volume16/bubenik15a/bubenik15a.pdf).
+"""
+struct Landscapes
+    landscapes::Vector{PersistenceCurve{typeof(landscape),k_max}}
+
+    function Landscapes(n::Int, args...; kwargs...)
+        if n < 1
+            throw(ArgumentError("`n` must be positive"))
+        end
+        landscapes = map(1:n) do i
+            Landscape(i, args...; kwargs...)
+        end
+        return new(landscapes)
+    end
+end
+
+output_size(l::Landscapes) = output_size(l.landscapes[1]) * length(l.landscapes)
+
+function Base.show(io::IO, ls::Landscapes)
+    l = first(ls.landscapes)
+    return print(
+        io,
+        "Landscapes(",
+        join((length(ls.landscapes), string(l.start), string(l.stop)), ", "),
+        "; length=$(l.length))",
+    )
+end
+
+function (ls::Landscapes)(diagram)
+    return mapreduce(l -> l(diagram), hcat, ls.landscapes)
+end
+
+"""
+    Silhuette
+
+The sum of persistence landscapes for all values of `k`.
+
+    fun((b, d), _, t) = max(min(t - b, d - t), 0)
+    stat = sum
+
+# See also
+
+* [`PersistenceCurve`](@ref)
+* [`Landscape`](@ref)
+* [`Landscapes`](@ref)
+"""
+function Silhuette(args...; length=10, integrate=true)
+    return PersistenceCurve(landscape, sum, args...; length=length, integrate=integrate)
+end
