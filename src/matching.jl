@@ -392,7 +392,7 @@ Bottleneck Matching with weight 2.0:
 """
 struct Bottleneck <: MatchingDistance end
 
-function (::Bottleneck)(left, right; matching=false)
+function (::Bottleneck)(left::PersistenceDiagram, right::PersistenceDiagram; matching=false)
     if count(!isfinite, left) ≠ count(!isfinite, right)
         if matching
             return Matching(left, right, Inf, Pair{Int,Int}[], true)
@@ -426,6 +426,18 @@ function (::Bottleneck)(left, right; matching=false)
         return Matching(left, right, distance, match, true)
     else
         return distance
+    end
+end
+
+function (b::Bottleneck)(left, right; matching=false)
+    if length(left) ≠ length(right)
+        throw(ArgumentError("`left` and `right` must have the same length"))
+    end
+    results = (b(l, r; matching=matching) for (l, r) in zip(left, right))
+    if matching
+        return collect(results)
+    else
+        return maximum(results)
     end
 end
 
@@ -478,7 +490,9 @@ struct Wasserstein <: MatchingDistance
     Wasserstein(q=1) = new(Float64(q))
 end
 
-function (w::Wasserstein)(left, right; matching=false)
+function (w::Wasserstein)(
+    left::PersistenceDiagram, right::PersistenceDiagram; matching=false
+)
     if count(!isfinite, left) == count(!isfinite, right)
         adj = _adjacency_matrix(right, left, w.q)
         match = collect(i => j for (i, j) in enumerate(hungarian(adj)[1]))
@@ -495,5 +509,17 @@ function (w::Wasserstein)(left, right; matching=false)
         else
             return Inf
         end
+    end
+end
+
+function (w::Wasserstein)(left, right; matching=false)
+    if length(left) ≠ length(right)
+        throw(ArgumentError("`left` and `right` must have the same length"))
+    end
+    results = (w(l, r; matching=matching) for (l, r) in zip(left, right))
+    if matching
+        return collect(results)
+    else
+        return sum(results)
     end
 end
