@@ -108,3 +108,23 @@ end
     @test Wasserstein(2)(diag1, diag2) == √200
     @test Wasserstein(2)(diag2, diag1) == √200
 end
+
+@testset "Collections" begin
+    diags1 = [
+        PersistenceDiagram([(1, 2), (5, 8), (1, Inf)]),
+        PersistenceDiagram(vcat((90, 100), [(i, i + 1) for i in 1:100])),
+    ]
+    diags2 = [
+        PersistenceDiagram([(1, 2), (3, 4), (5, 10), (1, Inf)]),
+        PersistenceDiagram([(100, 110)]),
+    ]
+
+    @test Bottleneck()(diags1, diags2) == 10
+    @test Bottleneck()(diags1, diags2; matching=true)[2] isa PersistenceDiagrams.Matching
+    @test Wasserstein()(diags1, diags2) == 113
+    @test weight(Wasserstein(3)(diags1, diags2; matching=true)[1]) ==
+          Wasserstein(3)(diags1[1], diags2[1])
+
+    @test_throws ArgumentError Bottleneck()(diags1[1:1], diags2)
+    @test_throws ArgumentError Wasserstein()(diags1, diags2[2:2])
+end
