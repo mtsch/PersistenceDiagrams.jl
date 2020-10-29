@@ -1,10 +1,12 @@
 # MLJ Models
 
-This functionality is still experimental. To use load it, use
+To use PersistenceDiagrams with MLJ, use
 
 ```
 using PersistenceDiagrams.MLJPersistenceDiagrams
 ```
+
+Keep in mind that this functionality is still very experimental.
 
 ```@docs
 PersistenceDiagrams.PersistenceImageVectorizer
