@@ -1,3 +1,7 @@
+# v0.8.1
+
+* Experimental integration with [MLJ.jl](https://github.com/alan-turing-institute/MLJ.jl).
+
 # v0.8.0
 
 * Split base functionality into
@@ -9,4 +13,3 @@
   - default value of `sigma` changed to 2× pixel size (in the larger direction),
   - improved performance.
 * Added `Landscapes`.
-* Experimental integration with [MLJ.jl](https://github.com/alan-turing-institute/MLJ.jl).
