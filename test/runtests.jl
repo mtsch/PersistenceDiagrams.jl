@@ -10,6 +10,9 @@ end
 @safetestset "persistenceimages" begin
     include("persistenceimages.jl")
 end
+@safetestset "mlj" begin
+    include("mlj.jl")
+end
 @safetestset "plotsrecipes" begin
     include("plotsrecipes.jl")
 end

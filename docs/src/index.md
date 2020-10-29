@@ -11,5 +11,6 @@ This package currently supports the following.
 
 * Persistence diagram plotting.
 * Bottleneck and Wasserstein matching and distance computation.
-* Persistence images.
-* Various persistence curves (see [API](api.md) for full list).
+* Various vectorization methods including persistence images, betti curves, landscapes, and
+  more (see [Vectorization](vectorization.md) for full list).
+* Integration with [MLJ.jl](https://github.com/alan-turing-institute/MLJ.jl).

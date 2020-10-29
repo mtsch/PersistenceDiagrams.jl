@@ -1,3 +1,7 @@
+# v0.8.1
+
+* Experimental integration with [MLJ.jl](https://github.com/alan-turing-institute/MLJ.jl).
+
 # v0.8.0
 
 * Split base functionality into
