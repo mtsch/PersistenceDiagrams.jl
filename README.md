@@ -1,7 +1,7 @@
 # PersistenceDiagrams.jl
 
 [![Coverage Status](https://coveralls.io/repos/github/mtsch/PersistenceDiagrams.jl/badge.svg?branch=master)](https://coveralls.io/github/mtsch/PersistenceDiagrams.jl?branch=master)
-[![Build Status](https://travis-ci.org/mtsch/PersistenceDiagrams.jl.svg?branch=master)](https://travis-ci.org/mtsch/PersistenceDiagrams.jl)
+[![Build Status](https://github.com/mtsch/PersistenceDiagrams.jl/workflows/Test/badge.svg)](https://github.com/mtsch/PersistenceDiagrams.jl/actions?query=workflow%3ATest)
 [![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://mtsch.github.io/PersistenceDiagrams.jl/dev)
 [![DOI](https://zenodo.org/badge/266457790.svg)](https://zenodo.org/badge/latestdoi/266457790)
 
