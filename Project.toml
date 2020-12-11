@@ -1,7 +1,7 @@
 name = "PersistenceDiagrams"
 uuid = "90b4794c-894b-4756-a0f8-5efeb5ddf7ae"
 authors = ["mtsch <matijacufar@gmail.com>"]
-version = "0.8.1"
+version = "0.8.2"
 
 [deps]
 Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"
@@ -16,7 +16,7 @@ Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 Compat = "^3.10.0"
 Hungarian = "0.6"
 MLJModelInterface = "^0.3.5"
-PersistenceDiagramsBase = "0.1"
+PersistenceDiagramsBase = "^0.1.1"
 RecipesBase = "1"
 Tables = "1"
 julia = "1"

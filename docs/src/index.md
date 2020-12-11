@@ -7,10 +7,10 @@ the [Ripserer.jl docs](https://mtsch.github.io/Ripserer.jl/dev/).
 
 ## Overview
 
-This package currently supports the following.
+This package currently supports the following:
 
-* Persistence diagram plotting.
-* Bottleneck and Wasserstein matching and distance computation.
-* Various vectorization methods including persistence images, betti curves, landscapes, and
-  more (see [Vectorization](vectorization.md) for full list).
-* Integration with [MLJ.jl](https://github.com/alan-turing-institute/MLJ.jl).
+* persistence diagram plotting
+* bottleneck and Wasserstein matching and distance computation
+* various vectorization methods including persistence images, betti curves, landscapes, and
+  more (see [Vectorization](vectorization.md) for full list)
+* integration with [MLJ.jl](https://github.com/alan-turing-institute/MLJ.jl).

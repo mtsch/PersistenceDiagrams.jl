@@ -17,6 +17,10 @@ persistence
 ```
 
 ```@docs
+midlife
+```
+
+```@docs
 representative
 ```
 
@@ -30,10 +34,6 @@ death_simplex
 
 ```@docs
 PersistenceDiagram
-```
-
-```@docs
-PersistenceDiagrams.table
 ```
 
 ```@docs
