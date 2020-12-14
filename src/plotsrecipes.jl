@@ -29,10 +29,12 @@ end
         else
             seriestype := :hline
         end
+        primary := false
         seriescolor := :grey
         line := :dot
         label := "∞"
         linewidth := 1
+        markershape := :none
 
         [plotattributes[:infinity]]
     else
@@ -44,7 +46,9 @@ end
 struct ZeroPersistenceLine end
 
 @recipe function f(::Type{ZeroPersistenceLine}, ::ZeroPersistenceLine)
+    primary := false
     seriescolor := :black
+    markershape := :none
 
     if get(plotattributes, :persistence, false)
         seriestype := :hline
@@ -127,6 +131,7 @@ end
         PersistenceDiagram,
     },
 )
+    seriescolor --> 1:length(diags)
     if diags isa PersistenceDiagram
         diags = (diags,)
     end
@@ -135,7 +140,6 @@ end
     # Only plot these if this was constructed with plot, not plot!
     if get(plotattributes, :plot_object, (n=0,)).n == 0
         @series begin
-            primary := false
             ZeroPersistenceLine()
         end
         @series begin
@@ -149,9 +153,10 @@ end
             seriestype := :persistencediagram
             if different_dims
                 label --> "H$(dim_str(diag))"
-                markercolor --> dim(diag) + 1
+                markercolor --> plotattributes[:seriescolor][dim(diag) + 1]
             else
                 label --> "H$(dim_str(diag)) ($i)"
+                markercolor --> plotattributes[:seriescolor][i]
             end
             diag, diag
         end
@@ -159,6 +164,7 @@ end
 end
 
 @recipe function f(match::Matching)
+    seriescolor --> [1, 2, 3]
     left = match.left
     right = match.right
     setup_diagram_plot!(plotattributes, (left, right))
@@ -166,6 +172,7 @@ end
 
     @series begin
         label --> "matching"
+        seriescolor := plotattributes[:seriescolor][1]
 
         xs = Float64[]
         ys = Float64[]
@@ -182,20 +189,20 @@ end
     end
 
     @series begin
-        primary := false
         InfinityLine(false)
     end
     @series begin
-        primary := false
         ZeroPersistenceLine()
     end
     @series begin
         seriestype := :persistencediagram
+        seriescolor := plotattributes[:seriescolor][2]
         label --> "left"
         left, left
     end
     @series begin
         seriestype := :persistencediagram
+        seriescolor := plotattributes[:seriescolor][3]
         label --> "right"
         right, right
     end
