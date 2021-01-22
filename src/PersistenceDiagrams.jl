@@ -33,7 +33,10 @@ export PersistenceDiagram,
     Landscape,
     Landscapes,
     Silhuette,
-    barcode
+    barcode,
+    PersistenceImageVectorizer,
+    PersistenceCurveVectorizer,
+    PersistenceLandscapeVectorizer
 
 using Compat
 using Hungarian
@@ -49,14 +52,6 @@ include("persistenceimages.jl")
 
 include("plotsrecipes.jl")
 
-# WIP
 include("mlj.jl")
-module MLJPersistenceDiagrams
-using ..PersistenceDiagrams:
-    PersistenceImageVectorizer, PersistenceCurveVectorizer, PersistenceLandscapeVectorizer
-export PersistenceImageVectorizer,
-    PersistenceCurveVectorizer, PersistenceLandscapeVectorizer
-end
-export MLJPersistenceDiagrams
 
 end
