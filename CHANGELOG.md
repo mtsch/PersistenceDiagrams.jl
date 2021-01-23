@@ -1,3 +1,7 @@
+# v0.9.0
+
+* MLJ integration is now exported by default.
+
 # v0.8.1
 
 * Experimental integration with [MLJ.jl](https://github.com/alan-turing-institute/MLJ.jl).
