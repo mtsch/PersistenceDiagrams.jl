@@ -61,9 +61,9 @@ end
 
     @testset "ZeroPersistenceLine" begin
         @test only(series(ZeroPersistenceLine, ZeroPersistenceLine())).args == (identity,)
-        @test only(series(
-            ZeroPersistenceLine, ZeroPersistenceLine(); persistence=true
-        )).args == ([0],)
+        @test only(
+            series(ZeroPersistenceLine, ZeroPersistenceLine(); persistence=true)
+        ).args == ([0],)
     end
 
     @testset "Diagram recipe" begin
