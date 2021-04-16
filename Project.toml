@@ -15,7 +15,7 @@ Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 [compat]
 Compat = "^3.10.0"
 Hungarian = "0.6"
-MLJModelInterface = "^0.3.5, 0.4"
+MLJModelInterface = "^0.3.5, 0.4, 1.0"
 PersistenceDiagramsBase = "^0.1.1"
 RecipesBase = "1"
 Tables = "1"
