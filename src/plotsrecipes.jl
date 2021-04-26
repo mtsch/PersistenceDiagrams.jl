@@ -150,14 +150,21 @@ end
     different_dims = all(d -> hasproperty(d, :dim), diags) && allunique(dim.(diags))
     for (i, diag) in enumerate(diags)
         @series begin
-            seriestype := :persistencediagram
+            series_cols = plotattributes[:seriescolor]
             if different_dims
+                idx = dim(diag) + 1
                 label --> "H$(dim_str(diag))"
-                markercolor --> plotattributes[:seriescolor][dim(diag) + 1]
             else
+                idx = i
                 label --> "H$(dim_str(diag)) ($i)"
-                markercolor --> plotattributes[:seriescolor][i]
             end
+
+            seriestype := :persistencediagram
+            seriescolor := series_cols[idx]
+            linecolor --> get(plotattributes, :linecolor, series_cols)[idx]
+            fillcolor --> get(plotattributes, :fillcolor, series_cols)[idx]
+            markercolor --> get(plotattributes, :markercolor, series_cols)[idx]
+
             diag, diag
         end
     end
