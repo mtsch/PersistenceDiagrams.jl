@@ -17,7 +17,7 @@ using PersistenceDiagrams
 
         @testset "show" begin
             @test sprint(show, curve) ==
-                  "PersistenceCurve(identity, sum, $(Float64(start)), $(Float64(stop)); " *
+                "PersistenceCurve(identity, sum, $(Float64(start)), $(Float64(stop)); " *
                   "length=$len, normalize=false, integrate=true)"
         end
     end

@@ -55,7 +55,7 @@ end
     m = Bottleneck()(diag1, diag2; matching=true)
     @test matching(m) == [(5, 8) => (5, 10)]
     @test matching(m; bottleneck=false) ==
-          [(1, 2) => (1, 2), (3, 3) => (3, 4), (5, 8) => (5, 10)]
+        [(1, 2) => (1, 2), (3, 3) => (3, 4), (5, 8) => (5, 10)]
     @test weight(m) ≡ 2.0
     @test Bottleneck()(diag1, diag2) ≡ 2.0
     @test Bottleneck()(diag1, diag2) == weight(matching(Bottleneck(), diag2, diag1))
@@ -123,7 +123,7 @@ end
     @test Bottleneck()(diags1, diags2; matching=true)[2] isa PersistenceDiagrams.Matching
     @test Wasserstein()(diags1, diags2) == 113
     @test weight(Wasserstein(3)(diags1, diags2; matching=true)[1]) ==
-          Wasserstein(3)(diags1[1], diags2[1])
+        Wasserstein(3)(diags1[1], diags2[1])
 
     @test_throws ArgumentError Bottleneck()(diags1[1:1], diags2)
     @test_throws ArgumentError Wasserstein()(diags1, diags2[2:2])

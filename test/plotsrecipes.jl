@@ -54,9 +54,9 @@ end
         @test isequal(only(series(InfinityLine, InfinityLine(true))).args, ([NaN],))
         @test only(series(InfinityLine, InfinityLine(true); infinity=5)).args == ([5],)
         @test only(series(InfinityLine, InfinityLine(true); infinity=5)).plotattributes[:seriestype] ==
-              :vline
+            :vline
         @test only(series(InfinityLine, InfinityLine(false); infinity=5)).plotattributes[:seriestype] ==
-              :hline
+            :hline
     end
 
     @testset "ZeroPersistenceLine" begin
@@ -75,9 +75,9 @@ end
 
     @testset "Persistencediagram" begin
         @test only(series(Val{:persistencediagram}, 1:4, 1:4, nothing)).plotattributes[:markerstrokecolor] ==
-              :auto
+            :auto
         @test only(series(Val{:persistencediagram}, 1:4, 1:4, nothing)).plotattributes[:seriestype] ==
-              :scatter
+            :scatter
     end
 
     @testset "Diagram plot" begin

@@ -137,7 +137,7 @@ julia> left = PersistenceDiagram([(0.0, 1.0), (3.0, 4.5)]);
 julia> right = PersistenceDiagram([(0.0, 1.0), (4.0, 5.0), (4.0, 7.0)]);
 
 julia> PersistenceDiagrams._adjacency_matrix(left, right)
-5×5 Array{Float64,2}:
+5×5 Matrix{Float64}:
   0.0   3.5   1.0  Inf   Inf
   4.0   1.0  Inf    1.0  Inf
   6.0   2.5  Inf   Inf    3.0
@@ -342,8 +342,9 @@ function _hopcroft_karp!(graph, ε)
         end
         paths = _augmenting_paths(graph, ε)
     end
-    matching =
-        [i => graph.match_left[i] for i in 1:(graph.n_vertices) if graph.match_left[i] ≠ 0]
+    matching = [
+        i => graph.match_left[i] for i in 1:(graph.n_vertices) if graph.match_left[i] ≠ 0
+    ]
     is_perfect = length(matching) == graph.n_vertices
 
     return matching, is_perfect

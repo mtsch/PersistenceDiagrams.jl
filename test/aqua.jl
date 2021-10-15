@@ -1,7 +1,4 @@
 using PersistenceDiagrams
 using Aqua
 
-Aqua.test_all(
-    PersistenceDiagrams;
-    ambiguities=(; exclude=[in]), # from MLJModelInterface
-)
+Aqua.test_all(PersistenceDiagrams; ambiguities=false)

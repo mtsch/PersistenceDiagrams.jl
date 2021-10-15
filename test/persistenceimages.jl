@@ -56,7 +56,7 @@ using Test
     @test sprint(show, pi_3) == "5×5 PersistenceImage"
 
     @test sprint((io, x) -> show(io, MIME"text/plain"(), x), pi_1) ==
-          "10×15 PersistenceImage(\n" *
+        "10×15 PersistenceImage(\n" *
           "  distribution = PersistenceDiagrams.Binormal(0.375),\n" *
           "  weight = PersistenceDiagrams.DefaultWeightingFunction(2.0),\n)"
 end
