@@ -342,8 +342,9 @@ function _hopcroft_karp!(graph, ε)
         end
         paths = _augmenting_paths(graph, ε)
     end
-    matching =
-        [i => graph.match_left[i] for i in 1:(graph.n_vertices) if graph.match_left[i] ≠ 0]
+    matching = [
+        i => graph.match_left[i] for i in 1:(graph.n_vertices) if graph.match_left[i] ≠ 0
+    ]
     is_perfect = length(matching) == graph.n_vertices
 
     return matching, is_perfect
