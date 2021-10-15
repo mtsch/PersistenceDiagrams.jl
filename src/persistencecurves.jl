@@ -49,7 +49,7 @@ julia> curve = BettiCurve(0, 2, length = 4)
 PersistenceCurve(always_one, sum, 0.0, 2.0; length=4, normalize=false, integrate=true)
 
 julia> curve(diagram)
-4-element Array{Float64,1}:
+4-element Vector{Float64}:
  1.0
  3.2
  2.0
