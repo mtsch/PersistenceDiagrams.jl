@@ -44,6 +44,7 @@ using PersistenceDiagramsBase
 using RecipesBase
 using Statistics
 using Tables
+import ScientificTypes
 
 include("matching.jl")
 
@@ -52,6 +53,7 @@ include("persistenceimages.jl")
 
 include("plotsrecipes.jl")
 
+include("scitypes.jl")
 include("mlj.jl")
 
 end
