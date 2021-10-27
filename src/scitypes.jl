@@ -1,5 +1,3 @@
 const ST = ScientificTypes
 
-ST.scitype(::PersistenceDiagram,
-           ::ST.DefaultConvention;
-           kwargs...) = PersistenceDiagram
+ST.scitype(::PersistenceDiagram, ::ST.DefaultConvention; kwargs...) = PersistenceDiagram
