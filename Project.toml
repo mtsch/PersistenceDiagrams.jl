@@ -19,7 +19,7 @@ Hungarian = "0.6"
 MLJModelInterface = "^0.3.5, 0.4, 1"
 PersistenceDiagramsBase = "^0.1.1"
 RecipesBase = "1"
-ScientificTypes = "2.3.2"
+ScientificTypes = "2.3.2, 3"
 Tables = "1"
 julia = "1"
 
