@@ -1,3 +1,4 @@
-const ST = ScientificTypes
+import ScientificTypes: DefaultConvention
+const SB = ScientificTypes.ScientificTypesBase
 
-ST.scitype(::PersistenceDiagram, ::ST.DefaultConvention; kwargs...) = PersistenceDiagram
+SB.scitype(::PersistenceDiagram, ::DefaultConvention; kwargs...) = PersistenceDiagram

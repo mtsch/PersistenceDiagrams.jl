@@ -42,9 +42,9 @@ using Compat
 using Hungarian
 using PersistenceDiagramsBase
 using RecipesBase
+using ScientificTypes
 using Statistics
 using Tables
-import ScientificTypes
 
 include("matching.jl")
 
