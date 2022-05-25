@@ -66,9 +66,9 @@ using Test
         @test propertynames(int1) == (:birth, :death)
         @test propertynames(int1, true) == (:birth, :death, :meta)
         @test propertynames(int3) ==
-              (:birth, :death, :birth_simplex, :death_simplex, :representative)
+            (:birth, :death, :birth_simplex, :death_simplex, :representative)
         @test propertynames(int3, true) ==
-              (:birth, :death, :birth_simplex, :death_simplex, :representative, :meta)
+            (:birth, :death, :birth_simplex, :death_simplex, :representative, :meta)
 
         @test_throws ErrorException birth_simplex(int1)
         @test_throws ErrorException death_simplex(int1)
@@ -85,7 +85,7 @@ using Test
         @test sprint(print_text_plain, int1) == "[1.0, 2.0)"
         @test sprint(print_text_plain, int2) == "[1.0, ∞)"
         @test sprint(print_text_plain, int3) ==
-              "[1.0, 2.0) with:\n" *
+            "[1.0, 2.0) with:\n" *
               " birth_simplex: Symbol\n" *
               " death_simplex: Symbol\n" *
               " representative: 4-element $(typeof(r))"
@@ -169,14 +169,14 @@ end
 
             @test sprint(print, diagram1) == "3-element 1-dimensional PersistenceDiagram"
             @test sprint(print_text_plain, diagram1) ==
-                  "3-element 1-dimensional PersistenceDiagram:\n" *
+                "3-element 1-dimensional PersistenceDiagram:\n" *
                   " [1.0, 3.0)\n" *
                   " [3.0, 4.0)\n" *
                   " [3.0, ∞)"
 
             @test sprint(print, diagram2) == "3-element PersistenceDiagram"
             @test sprint(print_text_plain, diagram2) ==
-                  "3-element PersistenceDiagram:\n" *
+                "3-element PersistenceDiagram:\n" *
                   " [1.0, 3.0)\n" *
                   " [3.0, 4.0)\n" *
                   " [3.0, ∞)"
@@ -222,16 +222,16 @@ end
     table = Tables.columntable((birth=[], death=[]))
     @test isempty(PersistenceDiagram(table))
 
-    @test_throws ErrorException PersistenceDiagram(Tables.columntable((
-        birth=[1, 1], death=[2, 2], threshold=[1, 2]
-    )))
-    @test_throws ErrorException PersistenceDiagram(Tables.columntable((
-        birth=[1, 1], death=[2, 2], dim=[1, 2]
-    )))
-    @test_throws ErrorException PersistenceDiagram(Tables.columntable((
-        death=[2, 2], dim=[1, 1]
-    )))
-    @test_throws ErrorException PersistenceDiagram(Tables.columntable((
-        birth=[2, 2], dim=[1, 1]
-    )))
+    @test_throws ErrorException PersistenceDiagram(
+        Tables.columntable((birth=[1, 1], death=[2, 2], threshold=[1, 2]))
+    )
+    @test_throws ErrorException PersistenceDiagram(
+        Tables.columntable((birth=[1, 1], death=[2, 2], dim=[1, 2]))
+    )
+    @test_throws ErrorException PersistenceDiagram(
+        Tables.columntable((death=[2, 2], dim=[1, 1]))
+    )
+    @test_throws ErrorException PersistenceDiagram(
+        Tables.columntable((birth=[2, 2], dim=[1, 1]))
+    )
 end

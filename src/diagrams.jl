@@ -28,7 +28,7 @@ julia> sort(diagram; by=persistence, rev=true)
  [3.0, 4.0)
 
 julia> propertynames(diagram)
-(:dim, :custom_metadata)
+(:intervals, :dim, :custom_metadata)
 
 julia> dim(diagram)
 1
