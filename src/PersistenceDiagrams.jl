@@ -40,12 +40,14 @@ export PersistenceDiagram,
 
 using Compat
 using Hungarian
-using PersistenceDiagramsBase
 using RecipesBase
 using ScientificTypes
 using Statistics
 using Tables
 
+include("intervals.jl")
+include("diagrams.jl")
+include("tables.jl")
 include("matching.jl")
 
 include("persistencecurves.jl")

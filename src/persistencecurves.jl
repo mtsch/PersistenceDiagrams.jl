@@ -272,7 +272,7 @@ persistence diagrams. [arXiv preprint arXiv:1904.07768](https://arxiv.org/abs/19
 function Midlife(args...; kwargs...)
     return PersistenceCurve(midlife, sum, args...; kwargs...)
 end
-PersistenceDiagramsBase.midlife((b, d), _, _) = (b + d) / 2
+midlife((b, d), _, _) = (b + d) / 2
 
 """
     LifeEntropy
