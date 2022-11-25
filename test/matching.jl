@@ -79,6 +79,14 @@ end
     @test weight(Wasserstein(), diag1, diag1) ≡ 0.0
 end
 
+@testset "Empty diagrams" begin
+    diag = PersistenceDiagram([])
+
+    @test Wasserstein()(diag,diag; matching = false) ≡ 0
+    @test Bottleneck()(diag,diag; matching = false) ≡ 0
+
+end
+
 @testset "Infinite intervals" begin
     diag1 = PersistenceDiagram([(1, 2), (5, 8), (1, Inf)])
     diag2 = PersistenceDiagram([(1, 2), (3, 4), (5, 10)])
