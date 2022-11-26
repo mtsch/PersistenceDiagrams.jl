@@ -507,7 +507,7 @@ function (w::Wasserstein)(
         if matching
             return Matching(left, right, 0, Pair{Int,Int}[], false)
         else
-            return 0
+            return 0.0
         end
     end 
 
