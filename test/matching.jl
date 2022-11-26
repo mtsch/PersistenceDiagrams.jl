@@ -82,8 +82,8 @@ end
 @testset "Empty diagrams" begin
     diag = PersistenceDiagram([])
 
-    @test Wasserstein()(diag,diag; matching = false) ≡ 0
-    @test Bottleneck()(diag,diag; matching = false) ≡ 0
+    @test Wasserstein()(diag,diag; matching = false) ≡ 0.0
+    @test Bottleneck()(diag,diag; matching = false) ≡ 0.0
 
 end
 
