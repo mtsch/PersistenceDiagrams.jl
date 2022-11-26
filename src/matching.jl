@@ -406,7 +406,7 @@ function (::Bottleneck)(left::PersistenceDiagram, right::PersistenceDiagram; mat
         if matching
             return Matching(left, right, 0, Pair{Int,Int}[], true)
         else
-            return 0
+            return 0.0
         end
     end 
 
