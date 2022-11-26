@@ -402,6 +402,14 @@ function (::Bottleneck)(left::PersistenceDiagram, right::PersistenceDiagram; mat
         end
     end
 
+    if length(left) == 0 & length(right) == 0 
+        if matching
+            return Matching(left, right, 0, Pair{Int,Int}[], true)
+        else
+            return 0.0
+        end
+    end 
+
     graph = BottleneckGraph(left, right)
     edges = graph.edges
 
@@ -494,6 +502,15 @@ end
 function (w::Wasserstein)(
     left::PersistenceDiagram, right::PersistenceDiagram; matching=false
 )
+
+    if length(left) == 0 & length(right) == 0 
+        if matching
+            return Matching(left, right, 0, Pair{Int,Int}[], false)
+        else
+            return 0.0
+        end
+    end 
+
     if count(!isfinite, left) == count(!isfinite, right)
         adj = _adjacency_matrix(right, left, w.q)
         match = collect(i => j for (i, j) in enumerate(hungarian(adj)[1]))
