@@ -85,11 +85,11 @@ function matching(match::Matching; bottleneck=match.bottleneck)
         elseif i ≤ n
             # left is matched to diagonal
             l = match.left[i]
-            push!(result, match.left[i] => PersistenceInterval(birth(l), birth(l)))
+            push!(result, match.left[i] => PersistenceInterval((birth(l)+death(l)), (birth(l)+death(l))))
         elseif j ≤ m
             # right is matched to diagonal
             r = match.right[j]
-            push!(result, PersistenceInterval(birth(r), birth(r)) => r)
+            push!(result, PersistenceInterval((birth(r)+death(r)), (birth(r)+death(r))) => r)
         end
     end
     sort!(result)
