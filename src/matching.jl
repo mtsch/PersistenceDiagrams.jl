@@ -85,11 +85,11 @@ function matching(match::Matching; bottleneck=match.bottleneck)
         elseif i ≤ n
             # left is matched to diagonal
             l = match.left[i]
-            push!(result, match.left[i] => PersistenceInterval(birth(l), birth(l)))
+            push!(result, l => PersistenceInterval((birth(l)+death(l))/2, (birth(l)+death(l))/2))
         elseif j ≤ m
             # right is matched to diagonal
             r = match.right[j]
-            push!(result, PersistenceInterval(birth(r), birth(r)) => r)
+            push!(result, PersistenceInterval((birth(r)+death(r))/2, (birth(r)+death(r))/2) => r)
         end
     end
     sort!(result)
@@ -159,10 +159,14 @@ function _adjacency_matrix(left, right, power=1)
         adj[j, i] = abs(birth(left[i]) - birth(right[j]))
     end
     for i in 1:n
-        adj[i + m, i] = persistence(left[i])
+        l = left[i]
+        d = (birth(l)+death(l))/2
+        adj[i + m, i] = max(abs(birth(l) - d), abs(death(l) - d))
     end
     for j in 1:m
-        adj[j, j + n] = persistence(right[j])
+        r = right[j]
+        d = (birth(r)+death(r))/2
+        adj[j, j + n] = max(abs(birth(r) - d), abs(death(r) - d))
     end
     adj[(m + 1):(m + n), (n + 1):(n + m)] .= 0.0
 
