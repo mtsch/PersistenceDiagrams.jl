@@ -156,7 +156,7 @@ function _adjacency_matrix(left, right, power=1)
     dists = _distances(left, right)
     adj[axes(dists)...] .= dists
     for i in (size(dists, 2) + 1):n, j in (size(dists, 1) + 1):m
-        adj[j, i] = abs(birth(left[i]) - birth(right[j]))
+        adj[j, i] = max(abs(birth(left[i]) - birth(right[j])), abs(death(left[i]) - death(right[j])))
     end
     for i in 1:n
         l = left[i]
