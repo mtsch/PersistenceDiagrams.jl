@@ -156,17 +156,26 @@ function _adjacency_matrix(left, right, power=1)
     dists = _distances(left, right)
     adj[axes(dists)...] .= dists
     for i in (size(dists, 2) + 1):n, j in (size(dists, 1) + 1):m
-        adj[j, i] = max(abs(birth(left[i]) - birth(right[j])), abs(death(left[i]) - death(right[j])))
+        if death(left[i]) == Inf && death(right[j]) == Inf && birth(left[i]) != Inf && birth(right[j]) != Inf
+            adj[j, i] = abs(birth(left[i]) - birth(right[j]))
+        else
+            adj[j, i] = max(abs(birth(left[i]) - birth(right[j])), abs(death(left[i]) - death(right[j])))
     end
     for i in 1:n
         l = left[i]
-        d = (birth(l)+death(l))/2
-        adj[i + m, i] = max(abs(birth(l) - d), abs(death(l) - d))
+        if death(left[i]) == Inf && death(right[j]) == Inf && birth(left[i]) != Inf && birth(right[j]) != Inf
+            adj[i + m, i] = persistence(l)
+        else
+            d = (birth(l)+death(l))/2
+            adj[i + m, i] = max(abs(birth(l) - d), abs(death(l) - d))
     end
     for j in 1:m
         r = right[j]
-        d = (birth(r)+death(r))/2
-        adj[j, j + n] = max(abs(birth(r) - d), abs(death(r) - d))
+        if death(left[i]) == Inf && death(right[j]) == Inf
+            adj[j, j + n] = persistence(r)
+        else
+            d = (birth(r)+death(r))/2
+            adj[j, j + n] = max(abs(birth(r) - d), abs(death(r) - d))
     end
     adj[(m + 1):(m + n), (n + 1):(n + m)] .= 0.0
 
