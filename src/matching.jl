@@ -85,11 +85,13 @@ function matching(match::Matching; bottleneck=match.bottleneck)
         elseif i ≤ n
             # left is matched to diagonal
             l = match.left[i]
-            push!(result, l => PersistenceInterval((birth(l)+death(l))/2, (birth(l)+death(l))/2))
+	    dis = (birth(l) + death(l))/2
+            push!(result, match.left[i] => PersistenceInterval(dis, dis))
         elseif j ≤ m
             # right is matched to diagonal
             r = match.right[j]
-            push!(result, PersistenceInterval((birth(r)+death(r))/2, (birth(r)+death(r))/2) => r)
+	    dis = (birth(r) + death(r))/2
+            push!(result, PersistenceInterval(birth(r), birth(r)) => r)
         end
     end
     sort!(result)
@@ -156,26 +158,13 @@ function _adjacency_matrix(left, right, power=1)
     dists = _distances(left, right)
     adj[axes(dists)...] .= dists
     for i in (size(dists, 2) + 1):n, j in (size(dists, 1) + 1):m
-        if death(left[i]) == Inf && death(right[j]) == Inf && birth(left[i]) != Inf && birth(right[j]) != Inf
-            adj[j, i] = abs(birth(left[i]) - birth(right[j]))
-        else
-            adj[j, i] = max(abs(birth(left[i]) - birth(right[j])), abs(death(left[i]) - death(right[j])))
+	    adj[j, i] = _distance(left[i], right[j])
     end
     for i in 1:n
-        l = left[i]
-        if death(left[i]) == Inf && death(right[j]) == Inf && birth(left[i]) != Inf && birth(right[j]) != Inf
-            adj[i + m, i] = persistence(l)
-        else
-            d = (birth(l)+death(l))/2
-            adj[i + m, i] = max(abs(birth(l) - d), abs(death(l) - d))
+        adj[i + m, i] = persistence(left[i])
     end
     for j in 1:m
-        r = right[j]
-        if death(left[i]) == Inf && death(right[j]) == Inf
-            adj[j, j + n] = persistence(r)
-        else
-            d = (birth(r)+death(r))/2
-            adj[j, j + n] = max(abs(birth(r) - d), abs(death(r) - d))
+        adj[j, j + n] = persistence(right[j])
     end
     adj[(m + 1):(m + n), (n + 1):(n + m)] .= 0.0
 
