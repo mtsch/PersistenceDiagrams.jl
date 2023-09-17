@@ -161,10 +161,10 @@ function _adjacency_matrix(left, right, power=1)
 	    adj[j, i] = _distance(left[i], right[j])
     end
     for i in 1:n
-        adj[i + m, i] = persistence(left[i])
+        adj[i + m, i] = persistence(left[i])/2
     end
     for j in 1:m
-        adj[j, j + n] = persistence(right[j])
+        adj[j, j + n] = persistence(right[j])/2
     end
     adj[(m + 1):(m + n), (n + 1):(n + m)] .= 0.0
 
