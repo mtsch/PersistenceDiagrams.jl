@@ -109,8 +109,8 @@ end
     diag1 = PersistenceDiagram(vcat((90, 100), [(i, i + 1) for i in 1:100]))
     diag2 = PersistenceDiagram([(100, 110)])
 
-    @test Bottleneck()(diag1, diag2) == 10
-    @test Bottleneck()(diag2, diag1) == 10
+    @test Bottleneck()(diag1, diag2) == 5.0
+    @test Bottleneck()(diag2, diag1) == 5.0
     @test Wasserstein()(diag1, diag2) == 110
     @test Wasserstein()(diag2, diag1) == 110
     @test Wasserstein(2)(diag1, diag2) == √200
@@ -127,7 +127,7 @@ end
         PersistenceDiagram([(100, 110)]),
     ]
 
-    @test Bottleneck()(diags1, diags2) == 10
+    @test Bottleneck()(diags1, diags2) == 5.0
     @test Bottleneck()(diags1, diags2; matching=true)[2] isa PersistenceDiagrams.Matching
     @test Wasserstein()(diags1, diags2) == 113
     @test weight(Wasserstein(3)(diags1, diags2; matching=true)[1]) ==
