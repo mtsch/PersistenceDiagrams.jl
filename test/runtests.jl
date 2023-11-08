@@ -4,8 +4,11 @@ using Test
 @safetestset "diagrams" begin
     include("diagrams.jl")
 end
+#@safetestset "matching" begin
+#    include("matching.jl")
+#end
 @safetestset "matching" begin
-    include("matching.jl")
+    include("matching_new.jl")
 end
 @safetestset "persistencecurves" begin
     include("persistencecurves.jl")
