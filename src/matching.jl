@@ -140,11 +140,11 @@ julia> right = PersistenceDiagram([(0.0, 1.0), (4.0, 5.0), (4.0, 7.0)]);
 
 julia> PersistenceDiagrams._adjacency_matrix(left, right)
 5×5 Matrix{Float64}:
-  0.0   3.5   1.0  Inf   Inf
-  4.0   1.0  Inf    1.0  Inf
-  6.0   2.5  Inf   Inf    3.0
-  1.0  Inf    0.0   0.0   0.0
- Inf    1.5   0.0   0.0   0.0
+  0.0   3.5    0.5  Inf   Inf
+  4.0   1.0   Inf    0.5  Inf
+  6.0   2.5   Inf   Inf    1.5
+  0.5  Inf     0.0   0.0   0.0
+ Inf    0.75   0.0   0.0   0.0
 ```
 """
 function _adjacency_matrix(left, right, power=1)
@@ -484,12 +484,12 @@ julia> left = PersistenceDiagram([(1.0, 2.0), (5.0, 8.0)]);
 julia> right = PersistenceDiagram([(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)]);
 
 julia> Wasserstein()(left, right)
-3.0
+2.5
 
 julia> Wasserstein()(left, right; matching=true)
-Matching with weight 3.0:
+Matching with weight 2.5:
  [1.0, 2.0) => [1.0, 2.0)
- [3.0, 3.0) => [3.0, 4.0)
+ [3.5, 3.5) => [3.0, 4.0)
  [5.0, 8.0) => [5.0, 10.0)
 
 ```
