@@ -8,7 +8,7 @@ end
 #    include("matching.jl")
 #end
 @safetestset "matching" begin
-    include("matching_new.jl")
+    include("matching.jl")
 end
 @safetestset "persistencecurves" begin
     include("persistencecurves.jl")

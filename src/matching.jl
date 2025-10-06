@@ -85,13 +85,11 @@ function matching(match::Matching; bottleneck=match.bottleneck)
         elseif i ≤ n
             # left is matched to diagonal
             l = match.left[i]
-            dis = (birth(l) + death(l))/2
-            push!(result, l => PersistenceInterval(dis, dis))
+            push!(result, l => _diagonal_interval(l))
         elseif j ≤ m
             # right is matched to diagonal
-	    r = match.right[j]
-            dis = (birth(r) + death(r))/2
-            push!(result, PersistenceInterval(dis, dis) => r)
+            r = match.right[j]
+            push!(result, _diagonal_interval(r) => r)
         end
     end
     sort!(result)
@@ -120,6 +118,8 @@ function Base.show(io::IO, ::MIME"text/plain", match::Matching)
         end
     end
 end
+
+_diagonal_interval((b, d)) = PersistenceInterval((b + d) / 2, (b + d) / 2)
 
 """
     _adjacency_matrix(left::PersistenceDiagram, right::PersistenceDiagram, power)
@@ -158,13 +158,13 @@ function _adjacency_matrix(left, right, power=1)
     dists = _distances(left, right)
     adj[axes(dists)...] .= dists
     for i in (size(dists, 2) + 1):n, j in (size(dists, 1) + 1):m
-	    adj[j, i] = _distance(left[i], right[j])
+	adj[j, i] = _distance(left[i], right[j])
     end
     for i in 1:n
-        adj[i + m, i] = persistence(left[i])/2
+        adj[i + m, i] = persistence(left[i]) / 2
     end
     for j in 1:m
-        adj[j, j + n] = persistence(right[j])/2
+        adj[j, j + n] = persistence(right[j]) / 2
     end
     adj[(m + 1):(m + n), (n + 1):(n + m)] .= 0.0
 
@@ -366,10 +366,9 @@ where ``X`` and ``Y`` are the persistence diagrams and ``\\eta`` is a perfect ma
 between the intervals. Note the ``X`` and ``Y`` don't need to have the same number of
 points, as the diagonal points are considered in the matching as well.
 
-# Warning
-
-Computing the bottleneck distance requires ``\\mathcal{O}(n^2)`` space. Be careful when
-computing distances between very large diagrams!
+!!! warning
+Computing the bottleneck distance requires ``\\mathcal{O}(n^2)`` space and
+``\\mathcal{O}(n^3)time``. Be careful when computing distances between very large diagrams!
 
 # Usage
 
@@ -404,13 +403,13 @@ function (::Bottleneck)(left::PersistenceDiagram, right::PersistenceDiagram; mat
         end
     end
 
-    if length(left) == 0 & length(right) == 0 
+    if length(left) == 0 & length(right) == 0
         if matching
             return Matching(left, right, 0, Pair{Int,Int}[], true)
         else
             return 0.0
         end
-    end 
+    end
 
     graph = BottleneckGraph(left, right)
     edges = graph.edges
@@ -505,13 +504,13 @@ function (w::Wasserstein)(
     left::PersistenceDiagram, right::PersistenceDiagram; matching=false
 )
 
-    if length(left) == 0 & length(right) == 0 
+    if length(left) == 0 & length(right) == 0
         if matching
             return Matching(left, right, 0, Pair{Int,Int}[], false)
         else
             return 0.0
         end
-    end 
+    end
 
     if count(!isfinite, left) == count(!isfinite, right)
         adj = _adjacency_matrix(right, left, w.q)
