@@ -14,12 +14,12 @@ using PersistenceDiagrams:
     diag2 = PersistenceDiagram([(3, 4), (5, 10), (7, Inf)])
 
     @test _adjacency_matrix(diag1, diag2) == [
-        # 1,2 1,∞ 3,3 5,5 7,7
-        2.0 Inf 1.0 Inf Inf  # 3,4
-        8.0 Inf Inf 5.0 Inf  # 5,7
+        # 1,2 1,∞ 3.5,3.5 7.5,7.5 ∞,∞
+        2.0 Inf 0.5 Inf Inf  # 3,4
+        8.0 Inf Inf 2.5 Inf  # 5,10
         Inf 6.0 Inf Inf Inf  # 7,∞
-        1.0 Inf 0.0 0.0 0.0  # 1,1
-        Inf Inf 0.0 0.0 0.0  # 1,1
+        0.5 Inf 0.0 0.0 0.0  # 1.5,1.5
+        Inf Inf 0.0 0.0 0.0  # ∞,∞
     ]
 
     @test _adjacency_matrix(diag1, diag2) == _adjacency_matrix(diag2, diag1)'
@@ -55,7 +55,7 @@ end
     m = Bottleneck()(diag1, diag2; matching=true)
     @test matching(m) == [(5, 8) => (5, 10)]
     @test matching(m; bottleneck=false) ==
-        [(1, 2) => (1, 2), (3, 3) => (3, 4), (5, 8) => (5, 10)]
+        [(1, 2) => (1, 2), (3.5, 3.5) => (3, 4), (5, 8) => (5, 10)]
     @test weight(m) ≡ 2.0
     @test Bottleneck()(diag1, diag2) ≡ 2.0
     @test Bottleneck()(diag1, diag2) == weight(matching(Bottleneck(), diag2, diag1))
@@ -68,10 +68,10 @@ end
     diag2 = PersistenceDiagram([(1, 2), (3, 4), (5, 10)])
 
     m = Wasserstein()(diag1, diag2; matching=true)
-    @test matching(m) == [(1, 2) => (1, 2), (3, 3) => (3, 4), (5, 8) => (5, 10)]
-    @test weight(m) ≡ 3.0
-    @test Wasserstein()(diag1, diag2) ≡ 3.0
-    @test weight(matching(Wasserstein(2), diag1, diag2)) ≡ √(1 + 4)
+    @test matching(m) == [(1, 2) => (1, 2), (3.5, 3.5) => (3, 4), (5, 8) => (5, 10)]
+    @test weight(m) ≡ 2.5
+    @test Wasserstein()(diag1, diag2) ≡ 2.5
+    @test weight(matching(Wasserstein(2), diag1, diag2)) ≡ √(0.25 + 4)
     for i in 1:3
         @test Wasserstein(i)(diag1, diag2) ≡ Wasserstein(i)(diag2, diag1)
     end
@@ -109,12 +109,12 @@ end
     diag1 = PersistenceDiagram(vcat((90, 100), [(i, i + 1) for i in 1:100]))
     diag2 = PersistenceDiagram([(100, 110)])
 
-    @test Bottleneck()(diag1, diag2) == 10
-    @test Bottleneck()(diag2, diag1) == 10
-    @test Wasserstein()(diag1, diag2) == 110
-    @test Wasserstein()(diag2, diag1) == 110
-    @test Wasserstein(2)(diag1, diag2) == √200
-    @test Wasserstein(2)(diag2, diag1) == √200
+    @test Bottleneck()(diag1, diag2) == 5.0
+    @test Bottleneck()(diag2, diag1) == 5.0
+    @test Wasserstein()(diag1, diag2) == 60
+    @test Wasserstein()(diag2, diag1) == 60
+    @test Wasserstein(2)(diag1, diag2) == √75
+    @test Wasserstein(2)(diag2, diag1) == √75
 end
 
 @testset "Collections" begin
@@ -127,9 +127,9 @@ end
         PersistenceDiagram([(100, 110)]),
     ]
 
-    @test Bottleneck()(diags1, diags2) == 10
+    @test Bottleneck()(diags1, diags2) == 5.0
     @test Bottleneck()(diags1, diags2; matching=true)[2] isa PersistenceDiagrams.Matching
-    @test Wasserstein()(diags1, diags2) == 113
+    @test Wasserstein()(diags1, diags2) == 62.5
     @test weight(Wasserstein(3)(diags1, diags2; matching=true)[1]) ==
         Wasserstein(3)(diags1[1], diags2[1])
 
