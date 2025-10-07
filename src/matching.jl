@@ -154,8 +154,6 @@ julia> PersistenceDiagrams._adjacency_matrix(left, right)
 ```
 """
 function _adjacency_matrix(left, right, power=1, q=Inf)
-    left = sort(left; by=death)
-    right = sort(right; by=death)
 
     n = length(left)
     m = length(right)
@@ -163,9 +161,7 @@ function _adjacency_matrix(left, right, power=1, q=Inf)
 
     dists = _distances(left, right, q)
     adj[axes(dists)...] .= dists
-    for i in (size(dists, 2) + 1):n, j in (size(dists, 1) + 1):m
-	adj[j, i] = _distance(left[i], right[j], q)
-    end
+
     for i in 1:n
         adj[i + m, i] = _distance(left[i], _diagonal_interval(left[i]), q)
     end
@@ -457,13 +453,13 @@ function (b::Bottleneck)(left, right; matching=false)
 end
 
 """
-    Wasserstein(q=1)
+    Wasserstein(p=1, q=Inf)
 
 Use this object to find the Wasserstein distance or matching between persistence diagrams.
 The distance value is equal to
 
 ```math
-W_q(X,Y)=\\left[\\inf_{\\eta:X\\rightarrow Y}\\sum_{x\\in X}||x-\\eta(x)||_\\infty^q\\right]^{1/q},
+W_pq(X,Y)=\\left[\\inf_{\\eta:X\\rightarrow Y}\\sum_{x\\in X}||x-\\eta(x)||_\\q^p\\right]^{1/p},
 ```
 
 where ``X`` and ``Y`` are the persistence diagrams and ``\\eta`` is a perfect matching
@@ -519,8 +515,9 @@ function (w::Wasserstein)(
     end
 
     if count(!isfinite, left) == count(!isfinite, right)
-        adj = _adjacency_matrix(right, left, w.p)
+        adj = _adjacency_matrix(right, left, w.p, w.q)
         match = collect(i => j for (i, j) in enumerate(hungarian(adj)[1]))
+
         distance = sum(adj[i, j] for (i, j) in match)^(1 / w.p)
 
         if matching
