@@ -459,23 +459,22 @@ Use this object to find the Wasserstein distance or matching between persistence
 The distance value is equal to
 
 ```math
-W_pq(X,Y)=\\left[\\inf_{\\eta:X\\rightarrow Y}\\sum_{x\\in X}||x-\\eta(x)||_\\q^p\\right]^{1/p},
+W_{p,q}(X,Y)=\\left[\\inf_{\\eta:X\\rightarrow Y}\\sum_{x\\in X}||x-\\eta(x)||_\\q^p\\right]^{1/p},
 ```
 
 where ``X`` and ``Y`` are the persistence diagrams and ``\\eta`` is a perfect matching
 between the intervals. Note the ``X`` and ``Y`` don't need to have the same number of
 points, as the diagonal points are considered in the matching as well.
 
-# Warning
-
-Computing the Wasserstein distance requires ``\\mathcal{O}(n^2)`` space. Be careful when
-computing distances between very large diagrams!
+!!! warning
+Computing the Wasserstein distance requires ``\\mathcal{O}(n^2)`` space and
+``\\mathcal{O}(n^3)`` time. Be careful when computing distances between very large diagrams!
 
 # Usage
 
-* `Wasserstein(q=1)(left, right[; matching=false])`: find the Wasserstein matching (if
-  `matching=true`) or distance (if `matching=false`) between persistence diagrams `left` and
-  `right`.
+* `Wasserstein(p=1, q=Inf)(left, right[; matching=false])`: find the Wasserstein matching
+  (if `matching=true`) or distance (if `matching=false`) between persistence diagrams `left`
+  and `right`.
 
 # Example
 
