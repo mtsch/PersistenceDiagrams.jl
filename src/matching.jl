@@ -69,7 +69,7 @@ function _distance(int1, int2, q=Inf)
     if q === Inf
         return max(diff_birth, diff_death)
     else
-        return (diff_birth^q + diff_death^q) ^ (1/q)
+        return (diff_birth^q + diff_death^q)^(1 / q)
     end
 end
 
@@ -154,7 +154,6 @@ julia> PersistenceDiagrams._adjacency_matrix(left, right)
 ```
 """
 function _adjacency_matrix(left, right, power=1, q=Inf)
-
     n = length(left)
     m = length(right)
     adj = fill(Inf, n + m, m + n)
@@ -504,7 +503,6 @@ end
 function (w::Wasserstein)(
     left::PersistenceDiagram, right::PersistenceDiagram; matching=false
 )
-
     if length(left) == 0 & length(right) == 0
         if matching
             return Matching(left, right, 0, Pair{Int,Int}[], false)
