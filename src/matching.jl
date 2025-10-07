@@ -57,20 +57,26 @@ weight(match::Matching) = match.weight
 Base.length(match::Matching) = length(match.matching)
 Base.isempty(match::Matching) = isempty(match.matching)
 
-function _distance(int1, int2)
+function _distance(int1, int2, q=Inf)
+    diff_birth = abs(birth(int1) - birth(int2))
     if isfinite(int1) && isfinite(int2)
-        return max(abs(birth(int1) - birth(int2)), abs(death(int1) - death(int2)))
+        diff_death = abs(death(int1) - death(int2))
     elseif !isfinite(int1) && !isfinite(int2)
-        return abs(birth(int1) - birth(int2))
+        diff_death = 0.0
     else
-        return Inf
+        diff_death = Inf
+    end
+    if q === Inf
+        return max(diff_birth, diff_death)
+    else
+        return (diff_birth^q + diff_death^q) ^ (1/q)
     end
 end
 
-function _distances(left, right)
+function _distances(left, right, q=Inf)
     dists = zeros(length(right), length(left))
     for j in eachindex(left), i in eachindex(right)
-        dists[i, j] = _distance(left[j], right[i])
+        dists[i, j] = _distance(left[j], right[i], q)
     end
     return dists
 end
@@ -147,7 +153,7 @@ julia> PersistenceDiagrams._adjacency_matrix(left, right)
  Inf    0.75   0.0   0.0   0.0
 ```
 """
-function _adjacency_matrix(left, right, power=1)
+function _adjacency_matrix(left, right, power=1, q=Inf)
     left = sort(left; by=death)
     right = sort(right; by=death)
 
@@ -155,24 +161,23 @@ function _adjacency_matrix(left, right, power=1)
     m = length(right)
     adj = fill(Inf, n + m, m + n)
 
-    dists = _distances(left, right)
+    dists = _distances(left, right, q)
     adj[axes(dists)...] .= dists
     for i in (size(dists, 2) + 1):n, j in (size(dists, 1) + 1):m
-	adj[j, i] = _distance(left[i], right[j])
+	adj[j, i] = _distance(left[i], right[j], q)
     end
     for i in 1:n
-        adj[i + m, i] = persistence(left[i]) / 2
+        adj[i + m, i] = _distance(left[i], _diagonal_interval(left[i]), q)
     end
     for j in 1:m
-        adj[j, j + n] = persistence(right[j]) / 2
+        adj[j, j + n] = _distance(right[j], _diagonal_interval(right[j]), q)
     end
     adj[(m + 1):(m + n), (n + 1):(n + m)] .= 0.0
 
     if power ≠ 1
-        return adj .^ power
-    else
-        return adj
+        adj .^= power
     end
+    return adj
 end
 
 """
@@ -458,7 +463,7 @@ Use this object to find the Wasserstein distance or matching between persistence
 The distance value is equal to
 
 ```math
-W_q(X,Y)=\\left[\\inf_{\\eta:X\\rightarrow Y}\\sum_{x\\in X}||x-\\eta(x)||_\\infty^q\\right],
+W_q(X,Y)=\\left[\\inf_{\\eta:X\\rightarrow Y}\\sum_{x\\in X}||x-\\eta(x)||_\\infty^q\\right]^{1/q},
 ```
 
 where ``X`` and ``Y`` are the persistence diagrams and ``\\eta`` is a perfect matching
@@ -495,9 +500,10 @@ Matching with weight 2.5:
 ```
 """
 struct Wasserstein <: MatchingDistance
+    p::Float64
     q::Float64
 
-    Wasserstein(q=1) = new(Float64(q))
+    Wasserstein(p=1, q=Inf) = new(Float64(p), Float64(q))
 end
 
 function (w::Wasserstein)(
@@ -513,9 +519,9 @@ function (w::Wasserstein)(
     end
 
     if count(!isfinite, left) == count(!isfinite, right)
-        adj = _adjacency_matrix(right, left, w.q)
+        adj = _adjacency_matrix(right, left, w.p)
         match = collect(i => j for (i, j) in enumerate(hungarian(adj)[1]))
-        distance = sum(adj[i, j] for (i, j) in match)^(1 / w.q)
+        distance = sum(adj[i, j] for (i, j) in match)^(1 / w.p)
 
         if matching
             return Matching(left, right, distance, match, false)
