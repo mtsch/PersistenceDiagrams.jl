@@ -57,20 +57,26 @@ weight(match::Matching) = match.weight
 Base.length(match::Matching) = length(match.matching)
 Base.isempty(match::Matching) = isempty(match.matching)
 
-function _distance(int1, int2)
+function _distance(int1, int2, q=Inf)
+    diff_birth = abs(birth(int1) - birth(int2))
     if isfinite(int1) && isfinite(int2)
-        return max(abs(birth(int1) - birth(int2)), abs(death(int1) - death(int2)))
+        diff_death = abs(death(int1) - death(int2))
     elseif !isfinite(int1) && !isfinite(int2)
-        return abs(birth(int1) - birth(int2))
+        diff_death = 0.0
     else
-        return Inf
+        diff_death = Inf
+    end
+    if q === Inf
+        return max(diff_birth, diff_death)
+    else
+        return (diff_birth^q + diff_death^q)^(1 / q)
     end
 end
 
-function _distances(left, right)
+function _distances(left, right, q=Inf)
     dists = zeros(length(right), length(left))
     for j in eachindex(left), i in eachindex(right)
-        dists[i, j] = _distance(left[j], right[i])
+        dists[i, j] = _distance(left[j], right[i], q)
     end
     return dists
 end
@@ -85,13 +91,11 @@ function matching(match::Matching; bottleneck=match.bottleneck)
         elseif i ≤ n
             # left is matched to diagonal
             l = match.left[i]
-            dis = (birth(l) + death(l))/2
-            push!(result, l => PersistenceInterval(dis, dis))
+            push!(result, l => _diagonal_interval(l))
         elseif j ≤ m
             # right is matched to diagonal
-	    r = match.right[j]
-            dis = (birth(r) + death(r))/2
-            push!(result, PersistenceInterval(dis, dis) => r)
+            r = match.right[j]
+            push!(result, _diagonal_interval(r) => r)
         end
     end
     sort!(result)
@@ -121,6 +125,8 @@ function Base.show(io::IO, ::MIME"text/plain", match::Matching)
     end
 end
 
+_diagonal_interval((b, d)) = PersistenceInterval((b + d) / 2, (b + d) / 2)
+
 """
     _adjacency_matrix(left::PersistenceDiagram, right::PersistenceDiagram, power)
 
@@ -140,39 +146,33 @@ julia> right = PersistenceDiagram([(0.0, 1.0), (4.0, 5.0), (4.0, 7.0)]);
 
 julia> PersistenceDiagrams._adjacency_matrix(left, right)
 5×5 Matrix{Float64}:
-  0.0   3.5   1.0  Inf   Inf
-  4.0   1.0  Inf    1.0  Inf
-  6.0   2.5  Inf   Inf    3.0
-  1.0  Inf    0.0   0.0   0.0
- Inf    1.5   0.0   0.0   0.0
+  0.0   3.5    0.5  Inf   Inf
+  4.0   1.0   Inf    0.5  Inf
+  6.0   2.5   Inf   Inf    1.5
+  0.5  Inf     0.0   0.0   0.0
+ Inf    0.75   0.0   0.0   0.0
 ```
 """
-function _adjacency_matrix(left, right, power=1)
-    left = sort(left; by=death)
-    right = sort(right; by=death)
-
+function _adjacency_matrix(left, right, power=1, q=Inf)
     n = length(left)
     m = length(right)
     adj = fill(Inf, n + m, m + n)
 
-    dists = _distances(left, right)
+    dists = _distances(left, right, q)
     adj[axes(dists)...] .= dists
-    for i in (size(dists, 2) + 1):n, j in (size(dists, 1) + 1):m
-	    adj[j, i] = _distance(left[i], right[j])
-    end
+
     for i in 1:n
-        adj[i + m, i] = persistence(left[i])/2
+        adj[i + m, i] = _distance(left[i], _diagonal_interval(left[i]), q)
     end
     for j in 1:m
-        adj[j, j + n] = persistence(right[j])/2
+        adj[j, j + n] = _distance(right[j], _diagonal_interval(right[j]), q)
     end
     adj[(m + 1):(m + n), (n + 1):(n + m)] .= 0.0
 
     if power ≠ 1
-        return adj .^ power
-    else
-        return adj
+        adj .^= power
     end
+    return adj
 end
 
 """
@@ -366,10 +366,9 @@ where ``X`` and ``Y`` are the persistence diagrams and ``\\eta`` is a perfect ma
 between the intervals. Note the ``X`` and ``Y`` don't need to have the same number of
 points, as the diagonal points are considered in the matching as well.
 
-# Warning
-
-Computing the bottleneck distance requires ``\\mathcal{O}(n^2)`` space. Be careful when
-computing distances between very large diagrams!
+!!! warning
+Computing the bottleneck distance requires ``\\mathcal{O}(n^2)`` space and
+``\\mathcal{O}(n^3)time``. Be careful when computing distances between very large diagrams!
 
 # Usage
 
@@ -404,13 +403,13 @@ function (::Bottleneck)(left::PersistenceDiagram, right::PersistenceDiagram; mat
         end
     end
 
-    if length(left) == 0 & length(right) == 0 
+    if length(left) == 0 & length(right) == 0
         if matching
             return Matching(left, right, 0, Pair{Int,Int}[], true)
         else
             return 0.0
         end
-    end 
+    end
 
     graph = BottleneckGraph(left, right)
     edges = graph.edges
@@ -453,29 +452,28 @@ function (b::Bottleneck)(left, right; matching=false)
 end
 
 """
-    Wasserstein(q=1)
+    Wasserstein(p=1, q=Inf)
 
 Use this object to find the Wasserstein distance or matching between persistence diagrams.
 The distance value is equal to
 
 ```math
-W_q(X,Y)=\\left[\\inf_{\\eta:X\\rightarrow Y}\\sum_{x\\in X}||x-\\eta(x)||_\\infty^q\\right],
+W_{p,q}(X,Y)=\\left[\\inf_{\\eta:X\\rightarrow Y}\\sum_{x\\in X}||x-\\eta(x)||_\\q^p\\right]^{1/p},
 ```
 
 where ``X`` and ``Y`` are the persistence diagrams and ``\\eta`` is a perfect matching
 between the intervals. Note the ``X`` and ``Y`` don't need to have the same number of
 points, as the diagonal points are considered in the matching as well.
 
-# Warning
-
-Computing the Wasserstein distance requires ``\\mathcal{O}(n^2)`` space. Be careful when
-computing distances between very large diagrams!
+!!! warning
+Computing the Wasserstein distance requires ``\\mathcal{O}(n^2)`` space and
+``\\mathcal{O}(n^3)`` time. Be careful when computing distances between very large diagrams!
 
 # Usage
 
-* `Wasserstein(q=1)(left, right[; matching=false])`: find the Wasserstein matching (if
-  `matching=true`) or distance (if `matching=false`) between persistence diagrams `left` and
-  `right`.
+* `Wasserstein(p=1, q=Inf)(left, right[; matching=false])`: find the Wasserstein matching
+  (if `matching=true`) or distance (if `matching=false`) between persistence diagrams `left`
+  and `right`.
 
 # Example
 
@@ -485,38 +483,39 @@ julia> left = PersistenceDiagram([(1.0, 2.0), (5.0, 8.0)]);
 julia> right = PersistenceDiagram([(1.0, 2.0), (3.0, 4.0), (5.0, 10.0)]);
 
 julia> Wasserstein()(left, right)
-3.0
+2.5
 
 julia> Wasserstein()(left, right; matching=true)
-Matching with weight 3.0:
+Matching with weight 2.5:
  [1.0, 2.0) => [1.0, 2.0)
- [3.0, 3.0) => [3.0, 4.0)
+ [3.5, 3.5) => [3.0, 4.0)
  [5.0, 8.0) => [5.0, 10.0)
 
 ```
 """
 struct Wasserstein <: MatchingDistance
+    p::Float64
     q::Float64
 
-    Wasserstein(q=1) = new(Float64(q))
+    Wasserstein(p=1, q=Inf) = new(Float64(p), Float64(q))
 end
 
 function (w::Wasserstein)(
     left::PersistenceDiagram, right::PersistenceDiagram; matching=false
 )
-
-    if length(left) == 0 & length(right) == 0 
+    if length(left) == 0 & length(right) == 0
         if matching
             return Matching(left, right, 0, Pair{Int,Int}[], false)
         else
             return 0.0
         end
-    end 
+    end
 
     if count(!isfinite, left) == count(!isfinite, right)
-        adj = _adjacency_matrix(right, left, w.q)
+        adj = _adjacency_matrix(right, left, w.p, w.q)
         match = collect(i => j for (i, j) in enumerate(hungarian(adj)[1]))
-        distance = sum(adj[i, j] for (i, j) in match)^(1 / w.q)
+
+        distance = sum(adj[i, j] for (i, j) in match)^(1 / w.p)
 
         if matching
             return Matching(left, right, distance, match, false)

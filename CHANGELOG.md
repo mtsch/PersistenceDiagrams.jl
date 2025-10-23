@@ -1,3 +1,7 @@
+# v0.9.10
+
+* Bugfix with Bottleneck and Wasserstein distances. Wasserstein now supports changing the internal norm.
+
 # v0.9.0
 
 * MLJ integration is now exported by default.
